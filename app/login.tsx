@@ -13,6 +13,22 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, {
+  BounceIn,
+  FadeIn,
+  FadeInDown,
+  FadeInLeft,
+  FadeInRight,
+  FadeInUp,
+  SlideInLeft,
+  SlideInRight,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+  ZoomIn
+} from "react-native-reanimated";
 
 const { width, height } = Dimensions.get("window");
 
@@ -30,6 +46,11 @@ const COLORS = {
   success: "#2E7D32",
 };
 
+// Animated components
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
+const AnimatedText = Animated.createAnimatedComponent(Text);
+const AnimatedView = Animated.createAnimatedComponent(View);
+
 export default function LoginScreen() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState("");
@@ -38,6 +59,11 @@ export default function LoginScreen() {
   const [currentTime, setCurrentTime] = useState("15:23");
   const router = useRouter();
   const { t, i18n } = useTranslation();
+
+  // Animation values
+  const buttonScale = useSharedValue(1);
+  const cardOpacity = useSharedValue(1);
+  const skipButtonScale = useSharedValue(1);
 
   // Update Hong Kong time with moment-timezone
   useEffect(() => {
@@ -52,11 +78,21 @@ export default function LoginScreen() {
   }, []);
 
   const toggleLanguage = () => {
+    // Add animation when changing language
+    cardOpacity.value = withSequence(
+      withTiming(0, { duration: 200 }),
+      withTiming(1, { duration: 300 })
+    );
     i18n.changeLanguage(i18n.language === "en" ? "zh" : "en");
   };
 
   const handleSendOtp = () => {
     if (phoneNumber.length < 8) {
+      // Shake animation for error
+      buttonScale.value = withSequence(
+        withTiming(0.95, { duration: 100 }),
+        withSpring(1, { damping: 3 })
+      );
       Alert.alert(
         i18n.language === "en" ? "Invalid Phone" : "電話號碼無效",
         i18n.language === "en"
@@ -67,14 +103,23 @@ export default function LoginScreen() {
     }
 
     setIsLoading(true);
+    
+    // Loading animation
+    buttonScale.value = withTiming(0.95);
+    
     setTimeout(() => {
       setIsOtpSent(true);
       setIsLoading(false);
+      buttonScale.value = withSpring(1);
     }, 1500);
   };
 
   const handleVerifyOtp = () => {
     if (otp.length !== 6) {
+      buttonScale.value = withSequence(
+        withTiming(0.95, { duration: 100 }),
+        withSpring(1, { damping: 3 })
+      );
       Alert.alert(
         i18n.language === "en" ? "Invalid OTP" : "驗證碼無效",
         i18n.language === "en"
@@ -85,10 +130,12 @@ export default function LoginScreen() {
     }
 
     setIsLoading(true);
+    buttonScale.value = withTiming(0.95);
 
     // Simulate OTP verification
     setTimeout(() => {
       setIsLoading(false);
+      buttonScale.value = withSpring(1);
 
       // Show success alert and navigate to Home Dashboard
       Alert.alert(
@@ -101,7 +148,7 @@ export default function LoginScreen() {
             text: "OK",
             onPress: () => {
               // Navigate to Home Dashboard
-              router.replace("/home"); // Use 'replace' to prevent going back to login
+              router.replace("/home");
             },
           },
         ]
@@ -110,9 +157,34 @@ export default function LoginScreen() {
   };
 
   const handleEditPhone = () => {
+    cardOpacity.value = withSequence(
+      withTiming(0, { duration: 200 }),
+      withTiming(1, { duration: 300 })
+    );
     setIsOtpSent(false);
     setOtp("");
   };
+
+  const handleSkipLogin = () => {
+    console.log("Skip login pressed"); // Debug log
+
+    
+    // Navigate immediately without delay
+    router.replace("/home");
+  };
+
+  // Animated styles
+  const animatedButtonStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: buttonScale.value }],
+  }));
+
+  const animatedSkipButtonStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: skipButtonScale.value }],
+  }));
+
+  const animatedCardStyle = useAnimatedStyle(() => ({
+    opacity: cardOpacity.value,
+  }));
 
   return (
     <KeyboardAvoidingView
@@ -121,47 +193,77 @@ export default function LoginScreen() {
     >
       <View style={styles.content}>
         {/* Header with Language Switcher and Time */}
-        <View style={styles.header}>
+        <AnimatedView 
+          style={styles.header}
+          entering={FadeInDown.duration(800)}
+        >
           <View style={styles.languageSwitcher}>
-            <TouchableOpacity
+            <AnimatedTouchableOpacity
               onPress={toggleLanguage}
               style={styles.languageButton}
+              entering={FadeInLeft.duration(600).delay(200)}
             >
               <Text style={styles.languageText}>
                 {i18n.language === "en" ? "中文" : "English"}
               </Text>
-            </TouchableOpacity>
+            </AnimatedTouchableOpacity>
           </View>
-          <View style={styles.timeContainer}>
+          <AnimatedView 
+            style={styles.timeContainer}
+            entering={FadeInRight.duration(600).delay(200)}
+          >
             <Text style={styles.time}>
               {t("common.time", { time: currentTime })}
             </Text>
             <Text style={styles.location}>{t("welcome.location")}</Text>
-          </View>
-        </View>
+          </AnimatedView>
+        </AnimatedView>
 
         {/* Main Content */}
         <View style={styles.mainContent}>
           {/* App Logo and Name */}
-          <View style={styles.logoSection}>
-            <View style={styles.logoContainer}>
+          <AnimatedView 
+            style={styles.logoSection}
+            entering={BounceIn.duration(1000).delay(300)}
+          >
+            <AnimatedView 
+              style={styles.logoContainer}
+              entering={ZoomIn.duration(800).delay(400)}
+            >
               <Text style={styles.logoText}>💬</Text>
-            </View>
-            <Text style={styles.appName}>{t("welcome.title")}</Text>
-            <Text style={styles.appNameChinese}>
+            </AnimatedView>
+            <AnimatedText 
+              style={styles.appName}
+              entering={FadeInUp.duration(700).delay(500)}
+            >
+              {t("welcome.title")}
+            </AnimatedText>
+            <AnimatedText 
+              style={styles.appNameChinese}
+              entering={FadeInUp.duration(700).delay(600)}
+            >
               {t("welcome.chineseTitle")}
-            </Text>
-          </View>
+            </AnimatedText>
+          </AnimatedView>
 
           {/* Login Card */}
-          <View style={styles.loginCard}>
-            <Text style={styles.loginTitle}>
+          <AnimatedView 
+            style={[styles.loginCard, animatedCardStyle]}
+            entering={FadeInUp.duration(800).delay(700)}
+          >
+            <AnimatedText 
+              style={styles.loginTitle}
+              entering={FadeIn.duration(600).delay(800)}
+            >
               {isOtpSent ? t("login.enterVerification") : t("login.title")}
-            </Text>
+            </AnimatedText>
 
             {!isOtpSent ? (
               /* Phone Number Input */
-              <View style={styles.inputGroup}>
+              <AnimatedView 
+                style={styles.inputGroup}
+                entering={SlideInLeft.duration(500).delay(900)}
+              >
                 <Text style={styles.inputLabel}>{t("login.phoneNumber")}</Text>
                 <View style={styles.phoneInputContainer}>
                   <View style={styles.countryCode}>
@@ -178,10 +280,13 @@ export default function LoginScreen() {
                   />
                 </View>
                 <Text style={styles.helperText}>{t("login.sendCode")}</Text>
-              </View>
+              </AnimatedView>
             ) : (
               /* OTP Input */
-              <View style={styles.inputGroup}>
+              <AnimatedView 
+                style={styles.inputGroup}
+                entering={SlideInRight.duration(500).delay(900)}
+              >
                 <Text style={styles.inputLabel}>
                   {t("login.verificationCode")}
                 </Text>
@@ -206,17 +311,19 @@ export default function LoginScreen() {
                     {t("login.editPhone")}
                   </Text>
                 </TouchableOpacity>
-              </View>
+              </AnimatedView>
             )}
 
             {/* Action Button */}
-            <TouchableOpacity
+            <AnimatedTouchableOpacity
               style={[
                 styles.actionButton,
                 isLoading && styles.actionButtonDisabled,
+                animatedButtonStyle,
               ]}
               onPress={isOtpSent ? handleVerifyOtp : handleSendOtp}
               disabled={isLoading}
+              entering={FadeInUp.duration(600).delay(1000)}
             >
               <Text style={styles.actionButtonText}>
                 {isLoading
@@ -225,24 +332,41 @@ export default function LoginScreen() {
                   ? t("login.verify")
                   : t("login.send")}
               </Text>
-            </TouchableOpacity>
-          </View>
+            </AnimatedTouchableOpacity>
+
+            {/* Skip Login Button */}
+            <AnimatedTouchableOpacity
+              style={[styles.skipButton, animatedSkipButtonStyle]}
+              onPress={handleSkipLogin}
+              entering={FadeInUp.duration(600).delay(1100)}
+            >
+              <Text style={styles.skipButtonText}>
+                {i18n.language === "en" ? "Skip Login" : "跳過登入"}
+              </Text>
+            </AnimatedTouchableOpacity>
+          </AnimatedView>
 
           {/* Alternative Login */}
-          <View style={styles.alternativeSection}>
+          <AnimatedView 
+            style={styles.alternativeSection}
+            entering={FadeInUp.duration(600).delay(1200)}
+          >
             <Text style={styles.alternativeText}>{t("login.or")}</Text>
             <TouchableOpacity style={styles.alternativeButton}>
               <Text style={styles.alternativeButtonText}>
                 {t("login.loginWithEmail")}
               </Text>
             </TouchableOpacity>
-          </View>
+          </AnimatedView>
         </View>
 
         {/* Footer */}
-        <View style={styles.footer}>
+        <AnimatedView 
+          style={styles.footer}
+          entering={FadeInUp.duration(600).delay(1300)}
+        >
           <Text style={styles.footerText}>{t("login.terms")}</Text>
-        </View>
+        </AnimatedView>
       </View>
     </KeyboardAvoidingView>
   );
@@ -471,5 +595,15 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: "center",
     lineHeight: 16,
+  },
+  skipButton: {
+    padding: 16,
+    alignItems: "center",
+    marginTop: 12,
+  },
+  skipButtonText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    fontWeight: "500",
   },
 });
