@@ -1,10 +1,5 @@
 fastapi
 uvicorn[standard]
-transformers
-torch
-Pillow
+pillow
 python-multipart
-numpy
-accelerate
-bitsandbytes
-gtts
+requests
