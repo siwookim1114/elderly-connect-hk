@@ -4,7 +4,7 @@ from typing import Dict, List
 
 class VectorIndex:
     def __init__(self, dimension: int):
-        self.index = faiss.IndexFlatL2(dimension)
+        self.index = faiss.IndexFlatL2(dimension)   # L2 Euclidean distance search
         self.docs: List[Dict] = []
     
     def add(self, doc: Dict):
