@@ -3,3 +3,9 @@ node_modules/
 npm-debug.log*
 .DS_Store
 docs
+Nodejs/
+__pycache__/
+FastAPI APP/uploads/
+FastAPI APP/__pycache__/
+*.pyc
+test.py
