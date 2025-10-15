@@ -1,47 +1,42 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import type { Feature, Language } from "../types";
+import { FEATURES } from "./constants/features";
 
 export default function HomeDashboard() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
-  const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
+  const currentLanguage = i18n.language as Language;
 
   const toggleLanguage = () => {
-    const newLanguage = currentLanguage === "en" ? "zh" : "en";
+    const newLanguage: Language = currentLanguage === "en" ? "zh" : "en";
     i18n.changeLanguage(newLanguage);
-    setCurrentLanguage(newLanguage);
   };
 
-  const features = [
-    {
-      id: "voice",
-      icon: "🎙️",
-      title: t("home.Ting"),
-      subtitle: t("home.tingSubtitle"),
-      color: "#B4D7F1",
-      route: "/voice-companion",
-    },
-    {
-      id: "memory",
-      icon: "📸",
-      title: t("home.memoryGarden"),
-      subtitle: t("home.memorySubtitle"),
-      color: "#FFD9A0",
-      route: "/memory-garden",
-      badge: "NEW",
-    },
-    {
-      id: "activity",
-      icon: "🎯",
-      title: t("home.Haven"),
-      subtitle: t("home.havenSubtitle"),
-      color: "#B8E6C9",
-      route: "/ActivityDiscovery",
-    },
-  ];
+  const handleFeaturePress = (feature: Feature) => {
+    router.push(feature.route);
+  };
+
+  const renderFeatureButton = (feature: Feature) => (
+    <TouchableOpacity
+      key={feature.id}
+      style={[styles.featureButton, { backgroundColor: feature.color }]}
+      onPress={() => handleFeaturePress(feature)}
+      activeOpacity={0.7}
+    >
+      {feature.badge && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{feature.badge}</Text>
+        </View>
+      )}
+      <Text style={styles.featureIcon}>{feature.icon}</Text>
+      <Text style={styles.featureTitle}>{t(feature.title)}</Text>
+      <Text style={styles.featureSubtitle}>{t(feature.subtitle)}</Text>
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -66,25 +61,7 @@ export default function HomeDashboard() {
 
         {/* Feature Buttons */}
         <View style={styles.featuresContainer}>
-          {features.map((feature) => (
-            <TouchableOpacity
-              key={feature.id}
-              style={[styles.featureButton, { backgroundColor: feature.color }]}
-              onPress={() => router.push(feature.route)}
-              activeOpacity={0.7}
-            >
-              {feature.badge && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{feature.badge}</Text>
-                </View>
-              )}
-
-              <Text style={styles.featureIcon}>{feature.icon}</Text>
-              <Text style={styles.featureTitle}>{feature.title}</Text>
-              {/* Added subtitle */}
-              <Text style={styles.featureSubtitle}>{feature.subtitle}</Text>
-            </TouchableOpacity>
-          ))}
+          {FEATURES.map(renderFeatureButton)}
         </View>
       </View>
     </SafeAreaView>
@@ -147,7 +124,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   featureButton: {
-    minHeight: 160, // Increased height to accommodate subtitle
+    minHeight: 160,
     borderRadius: 24,
     paddingVertical: 24,
     paddingHorizontal: 32,
@@ -185,9 +162,8 @@ const styles = StyleSheet.create({
     color: "#2C2C2C",
     textAlign: "center",
     letterSpacing: 0.3,
-    marginBottom: 4, // Added margin for subtitle
+    marginBottom: 4,
   },
-  // New subtitle style
   featureSubtitle: {
     fontSize: 16,
     color: "#555",
@@ -196,4 +172,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     paddingHorizontal: 8,
   },
+  featureButtonPressed: {
+  transform: [{ scale: 0.98 }],
+  opacity: 0.9,
+},
 });
