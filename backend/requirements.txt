@@ -4,4 +4,12 @@ sentence-transformers
 faiss-cpu
 numpy
 pymongo
-dotenv
+python-dotenv
+langgraph
+# Voice functionality
+SpeechRecognition
+gTTS
+# FastAPI backend
+fastapi
+uvicorn[standard]
+python-multipart
