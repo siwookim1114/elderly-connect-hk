@@ -1,6 +1,3 @@
-node_modules/
-.env
-npm-debug.log*
 .DS_Store
 docs
 Nodejs/
@@ -9,3 +6,5 @@ FastAPI APP/uploads/
 FastAPI APP/__pycache__/
 *.pyc
 test.py
+image/
+model_test.ipynb
