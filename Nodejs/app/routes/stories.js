@@ -1,9 +1,10 @@
 import express from "express";
 import { Readable } from "node:stream";
 import { getDb, getBucket, toObjectId } from "../db/mongo.js";
-import { uploadImages } from "../middleware/uploads.js";
+import { uploadImages, encodeFilesToBase64 } from "../middleware/uploads.js";
 import { buildStoryPrompt } from "../utils/prompt.js";
 import { generateStoryFromImages } from "../services/ollama.js";
+// import { encode } from "node:punycode";
 
 const router = express.Router();
 const STORIES_COLLECTION = "stories";
@@ -139,7 +140,9 @@ router.post("/", uploadImages, async (req, res, next) => {
     try {
       photos = await storeImages(files);
       const prompt = buildStoryPrompt(context);
-      const base64Images = files.map((file) => file.buffer.toString("base64"));
+      const base64Images = req.base64Images?.length
+        ? req.base64Images
+        : encodeFilesToBase64(files);
       const storyText = await generateStoryFromImages({
         prompt,
         images: base64Images,
@@ -214,7 +217,9 @@ router.put("/:storyId/photos", uploadImages, async (req, res, next) => {
     let newPhotos = [];
     try {
       newPhotos = await storeImages(files);
-      const base64Images = files.map((file) => file.buffer.toString("base64"));
+      const base64Images = req.base64Images?.length
+        ? req.base64Images
+        : encodeFilesToBase64(files);
       const prompt = buildStoryPrompt(context);
       const storyText = await generateStoryFromImages({
         prompt,

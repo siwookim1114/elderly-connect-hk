@@ -22,14 +22,18 @@ export async function generateStoryFromImages({
     images,
     stream: false,
   };
-
+  console.log("Sending request to Ollama:", payload);
   try {
-    const response = await axios.post(`${BASE_URL}/api/generate`, payload, {
-      // headers: {
-      //   "Content-Type": "application/json",
-      // },
-      timeout: 3000000,
-    });
+    const response = await axios.post(
+      `${BASE_URL}/api/generate`,
+      (json = payload),
+      {
+        // headers: {
+        //   "Content-Type": "application/json",
+        // },
+        timeout: 3000000,
+      }
+    );
 
     if (typeof response.data?.response !== "string") {
       throw new Error("Ollama response did not include generated text.");
