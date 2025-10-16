@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import {
   Alert,
   Dimensions,
+  Image,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -32,24 +33,27 @@ import Animated, {
 
 const { width, height } = Dimensions.get("window");
 
-// Clean color palette inspired by Samsung
+// Orange color palette for Mingle app
 const COLORS = {
-  primary: "#1428A0", // Samsung blue
-  primaryDark: "#0D1C6B",
-  background: "#FFFFFF",
+  primary: "#E67E22", // Warm orange
+  primaryLight: "#F39C12", // Lighter orange
+  primaryDark: "#D35400", // Darker orange
+  background: "#FFF9F2", // Warm white background
   card: "#FFFFFF",
-  text: "#000000",
-  textSecondary: "#666666",
-  border: "#E5E5E5",
-  inputBackground: "#F8F8F8",
-  error: "#E31C1C",
-  success: "#2E7D32",
+  text: "#2C3E50", // Dark blue-gray for text
+  textSecondary: "#7F8C8D", // Gray for secondary text
+  border: "#FAD7A0", // Light orange border
+  inputBackground: "#FEF5E7", // Very light orange
+  error: "#E74C3C",
+  success: "#27AE60",
+  accent: "#F1C40F", // Golden yellow accent
 };
 
 // Animated components
 const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 const AnimatedText = Animated.createAnimatedComponent(Text);
 const AnimatedView = Animated.createAnimatedComponent(View);
+const AnimatedImage = Animated.createAnimatedComponent(Image);
 
 export default function LoginScreen() {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -78,7 +82,6 @@ export default function LoginScreen() {
   }, []);
 
   const toggleLanguage = () => {
-    // Add animation when changing language
     cardOpacity.value = withSequence(
       withTiming(0, { duration: 200 }),
       withTiming(1, { duration: 300 })
@@ -88,7 +91,6 @@ export default function LoginScreen() {
 
   const handleSendOtp = () => {
     if (phoneNumber.length < 8) {
-      // Shake animation for error
       buttonScale.value = withSequence(
         withTiming(0.95, { duration: 100 }),
         withSpring(1, { damping: 3 })
@@ -103,8 +105,6 @@ export default function LoginScreen() {
     }
 
     setIsLoading(true);
-    
-    // Loading animation
     buttonScale.value = withTiming(0.95);
     
     setTimeout(() => {
@@ -132,22 +132,19 @@ export default function LoginScreen() {
     setIsLoading(true);
     buttonScale.value = withTiming(0.95);
 
-    // Simulate OTP verification
     setTimeout(() => {
       setIsLoading(false);
       buttonScale.value = withSpring(1);
 
-      // Show success alert and navigate to Home Dashboard
       Alert.alert(
         i18n.language === "en" ? "Success!" : "成功！",
         i18n.language === "en"
-          ? "Login successful! Welcome to Elderly Connect."
-          : "登入成功！歡迎來到長者連線。",
+          ? "Login successful! Welcome to Mingle."
+          : "登入成功！歡迎來到 Mingle。",
         [
           {
             text: "OK",
             onPress: () => {
-              // Navigate to Home Dashboard
               router.replace("/home");
             },
           },
@@ -166,10 +163,7 @@ export default function LoginScreen() {
   };
 
   const handleSkipLogin = () => {
-    console.log("Skip login pressed"); // Debug log
-
-    
-    // Navigate immediately without delay
+    console.log("Skip login pressed");
     router.replace("/home");
   };
 
@@ -191,6 +185,12 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
+      {/* Background Gradient */}
+      <View style={styles.background}>
+        <View style={styles.orangeCircle} />
+        <View style={styles.lightOrangeCircle} />
+      </View>
+
       <View style={styles.content}>
         {/* Header with Language Switcher and Time */}
         <AnimatedView 
@@ -230,48 +230,53 @@ export default function LoginScreen() {
               style={styles.logoContainer}
               entering={ZoomIn.duration(800).delay(400)}
             >
-              <Text style={styles.logoText}>💬</Text>
+              <AnimatedImage
+                source={require('@/assets/images/logo.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+                entering={FadeIn.duration(800).delay(500)}
+              />
             </AnimatedView>
             <AnimatedText 
               style={styles.appName}
-              entering={FadeInUp.duration(700).delay(500)}
-            >
-              {t("welcome.title")}
-            </AnimatedText>
-            <AnimatedText 
-              style={styles.appNameChinese}
               entering={FadeInUp.duration(700).delay(600)}
             >
-              {t("welcome.chineseTitle")}
+              Mingle
+            </AnimatedText>
+            <AnimatedText 
+              style={styles.appSubtitle}
+              entering={FadeInUp.duration(700).delay(700)}
+            >
+              {i18n.language === "en" ? "Connect • Share • Enjoy" : "連接 • 分享 • 享受"}
             </AnimatedText>
           </AnimatedView>
 
           {/* Login Card */}
           <AnimatedView 
             style={[styles.loginCard, animatedCardStyle]}
-            entering={FadeInUp.duration(800).delay(700)}
+            entering={FadeInUp.duration(800).delay(800)}
           >
             <AnimatedText 
               style={styles.loginTitle}
-              entering={FadeIn.duration(600).delay(800)}
+              entering={FadeIn.duration(600).delay(900)}
             >
-              {isOtpSent ? t("login.enterVerification") : t("login.title")}
+              {isOtpSent ? t("login.enterVerification") : "Welcome Back"}
             </AnimatedText>
 
             {!isOtpSent ? (
               /* Phone Number Input */
               <AnimatedView 
                 style={styles.inputGroup}
-                entering={SlideInLeft.duration(500).delay(900)}
+                entering={SlideInLeft.duration(500).delay(1000)}
               >
-                <Text style={styles.inputLabel}>{t("login.phoneNumber")}</Text>
+                <Text style={styles.inputLabel}>Phone Number</Text>
                 <View style={styles.phoneInputContainer}>
                   <View style={styles.countryCode}>
                     <Text style={styles.countryCodeText}>+852</Text>
                   </View>
                   <TextInput
                     style={styles.phoneInput}
-                    placeholder={t("login.enterPhone")}
+                    placeholder="Enter your phone number"
                     placeholderTextColor="#999999"
                     value={phoneNumber}
                     onChangeText={setPhoneNumber}
@@ -279,16 +284,18 @@ export default function LoginScreen() {
                     maxLength={8}
                   />
                 </View>
-                <Text style={styles.helperText}>{t("login.sendCode")}</Text>
+                <Text style={styles.helperText}>
+                  We'll send a verification code to your phone
+                </Text>
               </AnimatedView>
             ) : (
               /* OTP Input */
               <AnimatedView 
                 style={styles.inputGroup}
-                entering={SlideInRight.duration(500).delay(900)}
+                entering={SlideInRight.duration(500).delay(1000)}
               >
                 <Text style={styles.inputLabel}>
-                  {t("login.verificationCode")}
+                  Verification Code
                 </Text>
                 <TextInput
                   style={styles.otpInput}
@@ -301,14 +308,14 @@ export default function LoginScreen() {
                   textAlign="center"
                 />
                 <Text style={styles.helperText}>
-                  {t("login.codeSent", { phone: phoneNumber })}
+                  Code sent to {phoneNumber}
                 </Text>
                 <TouchableOpacity
                   onPress={handleEditPhone}
                   style={styles.editPhone}
                 >
                   <Text style={styles.editPhoneText}>
-                    {t("login.editPhone")}
+                    Edit phone number
                   </Text>
                 </TouchableOpacity>
               </AnimatedView>
@@ -323,14 +330,14 @@ export default function LoginScreen() {
               ]}
               onPress={isOtpSent ? handleVerifyOtp : handleSendOtp}
               disabled={isLoading}
-              entering={FadeInUp.duration(600).delay(1000)}
+              entering={FadeInUp.duration(600).delay(1100)}
             >
               <Text style={styles.actionButtonText}>
                 {isLoading
-                  ? t("login.loading")
+                  ? "Sending..."
                   : isOtpSent
-                  ? t("login.verify")
-                  : t("login.send")}
+                  ? "Verify Code"
+                  : "Send Code"}
               </Text>
             </AnimatedTouchableOpacity>
 
@@ -338,25 +345,12 @@ export default function LoginScreen() {
             <AnimatedTouchableOpacity
               style={[styles.skipButton, animatedSkipButtonStyle]}
               onPress={handleSkipLogin}
-              entering={FadeInUp.duration(600).delay(1100)}
+              entering={FadeInUp.duration(600).delay(1200)}
             >
               <Text style={styles.skipButtonText}>
-                {i18n.language === "en" ? "Skip Login" : "跳過登入"}
+                {i18n.language === "en" ? "Skip for now" : "稍後登入"}
               </Text>
             </AnimatedTouchableOpacity>
-          </AnimatedView>
-
-          {/* Alternative Login */}
-          <AnimatedView 
-            style={styles.alternativeSection}
-            entering={FadeInUp.duration(600).delay(1200)}
-          >
-            <Text style={styles.alternativeText}>{t("login.or")}</Text>
-            <TouchableOpacity style={styles.alternativeButton}>
-              <Text style={styles.alternativeButtonText}>
-                {t("login.loginWithEmail")}
-              </Text>
-            </TouchableOpacity>
           </AnimatedView>
         </View>
 
@@ -365,7 +359,11 @@ export default function LoginScreen() {
           style={styles.footer}
           entering={FadeInUp.duration(600).delay(1300)}
         >
-          <Text style={styles.footerText}>{t("login.terms")}</Text>
+          <Text style={styles.footerText}>
+            {i18n.language === "en" 
+              ? "By continuing, you agree to our Terms and Privacy Policy"
+              : "繼續即表示您同意我們的條款和隱私政策"}
+          </Text>
         </AnimatedView>
       </View>
     </KeyboardAvoidingView>
@@ -377,42 +375,75 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  background: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  orangeCircle: {
+    position: 'absolute',
+    top: -80,
+    right: -80,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(230, 126, 34, 0.08)',
+  },
+  lightOrangeCircle: {
+    position: 'absolute',
+    bottom: -60,
+    left: -60,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: 'rgba(243, 156, 18, 0.05)',
+  },
   content: {
     flex: 1,
-    justifyContent: "space-between",
     paddingHorizontal: 24,
-    paddingTop: Platform.OS === "ios" ? 60 : 40,
-    paddingBottom: 40,
+    paddingTop: Platform.OS === "ios" ? 60 : 50,
+    paddingBottom: 30,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 20,
+    marginBottom: 10, // Reduced margin
   },
   languageSwitcher: {
     flex: 1,
   },
   languageButton: {
-    padding: 8,
+    padding: 10,
     alignSelf: "flex-start",
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   languageText: {
     color: COLORS.primary,
-    fontSize: 16,
-    fontWeight: "500",
+    fontSize: 14,
+    fontWeight: "600",
   },
   timeContainer: {
     alignItems: "flex-end",
   },
   time: {
-    fontSize: 32,
+    fontSize: 28, // Slightly smaller
     fontWeight: "300",
     color: COLORS.text,
-    marginBottom: 4,
+    marginBottom: 2, // Reduced margin
   },
   location: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.textSecondary,
     fontWeight: "500",
   },
@@ -420,117 +451,123 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    marginTop: -20, // Pull content up slightly
   },
   logoSection: {
     alignItems: "center",
-    marginBottom: 50,
+    marginBottom: 30, // Reduced margin
   },
   logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.primary,
+    width: 90, // Slightly smaller
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: COLORS.card,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    marginBottom: 16, // Reduced margin
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 2,
+    borderColor: COLORS.primaryLight,
   },
-  logoText: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#FFFFFF",
+  logoImage: {
+    width: 50, // Slightly smaller
+    height: 50,
   },
   appName: {
-    fontSize: 36,
+    fontSize: 36, // Slightly smaller
     fontWeight: "bold",
-    color: COLORS.text,
-    marginBottom: 4,
-  },
-  appNameChinese: {
-    fontSize: 24,
     color: COLORS.primary,
-    fontWeight: "600",
+    marginBottom: 6, // Reduced margin
+    letterSpacing: 0.5,
+  },
+  appSubtitle: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    fontWeight: "500",
+    letterSpacing: 0.3,
   },
   loginCard: {
     backgroundColor: COLORS.card,
     width: "100%",
     maxWidth: 400,
-    padding: 32,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    padding: 28, // Slightly reduced padding
+    borderRadius: 20,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 16,
+    elevation: 6,
     borderWidth: 1,
     borderColor: COLORS.border,
+    marginTop: 10, // Added margin top
   },
   loginTitle: {
-    fontSize: 28,
-    fontWeight: "300",
+    fontSize: 22, // Slightly smaller
+    fontWeight: "600",
     color: COLORS.text,
-    marginBottom: 32,
+    marginBottom: 24, // Reduced margin
     textAlign: "center",
   },
   inputGroup: {
-    marginBottom: 32,
+    marginBottom: 24, // Reduced margin
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
     color: COLORS.text,
-    marginBottom: 8,
-    letterSpacing: 0.5,
+    marginBottom: 10, // Reduced margin
+    letterSpacing: 0.3,
   },
   phoneInputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 6, // Reduced margin
   },
   countryCode: {
     backgroundColor: COLORS.inputBackground,
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderWidth: 1,
+    paddingVertical: 14, // Slightly reduced
+    borderWidth: 2,
     borderColor: COLORS.border,
     borderRightWidth: 0,
-    borderTopLeftRadius: 8,
-    borderBottomLeftRadius: 8,
+    borderTopLeftRadius: 10,
+    borderBottomLeftRadius: 10,
   },
   countryCodeText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: COLORS.text,
+    fontSize: 15,
+    fontWeight: "600",
+    color: COLORS.primary,
   },
   phoneInput: {
     flex: 1,
     backgroundColor: COLORS.inputBackground,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: COLORS.border,
     borderLeftWidth: 0,
-    borderTopRightRadius: 8,
-    borderBottomRightRadius: 8,
-    padding: 16,
-    fontSize: 16,
+    borderTopRightRadius: 10,
+    borderBottomRightRadius: 10,
+    padding: 14, // Slightly reduced
+    fontSize: 15,
     color: COLORS.text,
-    height: 50,
+    height: 48, // Slightly reduced
+    fontWeight: "500",
   },
   otpInput: {
     backgroundColor: COLORS.inputBackground,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: COLORS.border,
-    borderRadius: 8,
-    padding: 16,
-    fontSize: 18,
+    borderRadius: 10,
+    padding: 14, // Slightly reduced
+    fontSize: 16,
     color: COLORS.text,
-    height: 50,
-    marginBottom: 8,
-    fontWeight: "500",
-    letterSpacing: 4,
+    height: 48, // Slightly reduced
+    marginBottom: 6, // Reduced margin
+    fontWeight: "600",
+    letterSpacing: 3,
   },
   helperText: {
     fontSize: 12,
@@ -540,24 +577,25 @@ const styles = StyleSheet.create({
   },
   editPhone: {
     alignSelf: "center",
-    marginTop: 12,
-    padding: 8,
+    marginTop: 10, // Reduced margin
+    padding: 6, // Reduced padding
   },
   editPhoneText: {
     color: COLORS.primary,
-    fontSize: 14,
-    fontWeight: "500",
+    fontSize: 13,
+    fontWeight: "600",
   },
   actionButton: {
     backgroundColor: COLORS.primary,
-    padding: 16,
-    borderRadius: 8,
+    padding: 16, // Slightly reduced
+    borderRadius: 12,
     alignItems: "center",
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 5,
+    marginBottom: 12, // Reduced margin
   },
   actionButtonDisabled: {
     backgroundColor: COLORS.textSecondary,
@@ -567,43 +605,27 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
-    letterSpacing: 1,
-  },
-  alternativeSection: {
-    alignItems: "center",
-    marginTop: 32,
-  },
-  alternativeText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginBottom: 12,
-  },
-  alternativeButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  alternativeButtonText: {
-    color: COLORS.primary,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  footer: {
-    alignItems: "center",
-  },
-  footerText: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    textAlign: "center",
-    lineHeight: 16,
+    letterSpacing: 0.5,
   },
   skipButton: {
-    padding: 16,
+    padding: 10, // Reduced padding
     alignItems: "center",
-    marginTop: 12,
   },
   skipButtonText: {
     color: COLORS.textSecondary,
     fontSize: 14,
+    fontWeight: "600",
+  },
+  footer: {
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginTop: 10, // Reduced margin
+  },
+  footerText: {
+    fontSize: 11, // Slightly smaller
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    lineHeight: 15,
     fontWeight: "500",
   },
 });

@@ -32,17 +32,14 @@
     "success": "Success"
   },
   "home": {
-    "welcome": "Welcome",
-    "tagline": "Your companion for joyful living",
-    "Ting": "Ting",
-    "tingSubtitle": "Voice companion",
+    "welcome": "Welcome to Mingle",
+    "tagline": "Connecting Hong Kong's Elderly Community",
+    "Ting": "Voice Companion",
+    "tingSubtitle": "Talk and get assistance",
     "memoryGarden": "Memory Garden",
-    "memorySubtitle": "Preserve and relive",
-    "Haven": "Haven",
-    "havenSubtitle": "Connect with community",
-    "tapToStart": "Tap to start",
-    "getStarted": "Get Started",
-    "allFeaturesVisible": "All features visible - no scrolling needed"
+    "memorySubtitle": "Capture precious moments", 
+    "Haven": "Activity Haven",
+    "havenSubtitle": "Discover local events"
   },
   "common": {
     "back": "Back",

@@ -1,8 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
 import React from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
-import { TouchableOpacity } from 'react-native-gesture-handler';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface CustomHeaderProps {
   title: string;
@@ -17,16 +15,22 @@ export const CustomHeader: React.FC<CustomHeaderProps> = ({
 }) => {
   const navigation = useNavigation();
 
+  const handleBack = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    }
+  };
+
   return (
     <View style={[styles.header, { backgroundColor }]}>
       <View style={styles.headerContent}>
         {showBack && (
           <TouchableOpacity 
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            onPress={handleBack}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back" size={24} color="#2D3748" />
+            <Text style={styles.backText}>‹</Text>
             <Text style={styles.backText}>Back</Text>
           </TouchableOpacity>
         )}
@@ -67,7 +71,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#2D3748',
-    marginLeft: 4,
   },
   title: {
     fontSize: 18,
@@ -79,6 +82,6 @@ const styles = StyleSheet.create({
     right: 0,
   },
   spacer: {
-    width: 80, // Same width as back button for balance
+    width: 80,
   },
 });

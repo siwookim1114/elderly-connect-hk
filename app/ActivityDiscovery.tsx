@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import ActivityResults from "./ ActivityResults";
+import ActivityResults from "./ActivityResults";
 import LoadingAnimation from "./LoadingAnimation";
 
 // Import your JSON data
@@ -136,7 +136,7 @@ export default function ActivityDiscoveryScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
+        {/* Header with Mingle Branding */}
         <View style={styles.headerSection}>
           <TouchableOpacity
             style={styles.backButton}
@@ -265,10 +265,10 @@ export default function ActivityDiscoveryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#F7FAFC",
   },
   headerSection: {
-    backgroundColor: "#FFF",
+    backgroundColor: "#C6F6D5",
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 30,
@@ -277,8 +277,8 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 4,
     marginBottom: 20,
   },
   backButton: {
@@ -288,19 +288,19 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: "#007AFF",
+    color: "#2D3748",
     fontWeight: "600",
   },
   title: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#333",
+    color: "#2D3748",
     textAlign: "center",
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 18,
-    color: "#666",
+    color: "#4A5568",
     textAlign: "center",
   },
   section: {
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#333",
+    color: "#2D3748",
     marginBottom: 15,
   },
   buttonGrid: {
@@ -319,26 +319,31 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   districtButton: {
-    backgroundColor: "#FFF",
+    backgroundColor: "#FFFFFF",
     paddingVertical: 14,
     paddingHorizontal: 18,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#E0E0E0",
+    borderColor: "#E2E8F0",
     minWidth: "47%",
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   districtButtonActive: {
-    backgroundColor: "#007AFF",
-    borderColor: "#007AFF",
+    backgroundColor: "#E53E3E",
+    borderColor: "#E53E3E",
   },
   districtButtonText: {
     fontSize: 15,
-    color: "#333",
+    color: "#4A5568",
     fontWeight: "600",
   },
   districtButtonTextActive: {
-    color: "#FFF",
+    color: "#FFFFFF",
   },
   filterRow: {
     flexDirection: "row",
@@ -346,62 +351,73 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   filterChip: {
-    backgroundColor: "#FFF",
+    backgroundColor: "#FFFFFF",
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderWidth: 2,
+    borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   filterChipActive: {
-    backgroundColor: "#4CAF50",
-    borderColor: "#4CAF50",
+    backgroundColor: "#38A169",
+    borderColor: "#38A169",
   },
   filterChipText: {
     fontSize: 14,
-    color: "#666",
+    color: "#718096",
     fontWeight: "500",
   },
   filterChipTextActive: {
-    color: "#FFF",
+    color: "#FFFFFF",
     fontWeight: "700",
   },
   summaryCard: {
     marginHorizontal: 20,
-    backgroundColor: "#E3F2FD",
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: "#FED7D7",
+    padding: 20,
+    borderRadius: 16,
     marginBottom: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: "#2196F3",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
   },
   summaryText: {
     fontSize: 16,
-    color: "#333",
+    color: "#2D3748",
     marginBottom: 4,
   },
   summaryBold: {
     fontWeight: "700",
-    color: "#007AFF",
+    color: "#9B2C2C",
   },
   searchButton: {
+    backgroundColor: "#E53E3E",
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 16,
     marginHorizontal: 20,
-    backgroundColor: "#FF6B35",
-    paddingVertical: 18,
-    borderRadius: 12,
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
     elevation: 5,
   },
   searchButtonDisabled: {
-    backgroundColor: "#CCC",
+    backgroundColor: "#CBD5E1",
+    shadowOpacity: 0,
+    elevation: 0,
   },
   searchButtonText: {
-    color: "#FFF",
     fontSize: 18,
+    color: "#FFFFFF",
     fontWeight: "700",
   },
 });

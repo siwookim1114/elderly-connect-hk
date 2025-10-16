@@ -6,6 +6,7 @@ import {
   Animated,
   Dimensions,
   Easing,
+  Image,
   Platform,
   StyleSheet,
   Text,
@@ -15,18 +16,19 @@ import {
 
 const { width, height } = Dimensions.get("window");
 
-// Modern color palette
+// Orange color palette for Mingle app (consistent with login and home)
 const COLORS = {
-  primary: "#4361EE", // More modern blue
-  primaryLight: "#4895EF",
-  primaryDark: "#3A0CA3",
-  background: "#F8F9FA",
-  backgroundGradient: ["#FFFFFF", "#F0F4FF"],
-  text: "#2D3748",
-  textSecondary: "#718096",
-  accent: "#4CC9F0",
+  primary: "#E67E22", // Warm orange
+  primaryLight: "#F39C12", // Lighter orange
+  primaryDark: "#D35400", // Darker orange
+  background: "#FFF9F2", // Warm white background
+  card: "#FFFFFF",
+  text: "#2C3E50", // Dark blue-gray for text
+  textSecondary: "#7F8C8D", // Gray for secondary text
+  border: "#FAD7A0", // Light orange border
+  accent: "#F1C40F", // Golden yellow accent
   white: "#FFFFFF",
-  shadow: "rgba(67, 97, 238, 0.15)",
+  shadow: "rgba(230, 126, 34, 0.15)",
 };
 
 export default function Index() {
@@ -86,7 +88,7 @@ export default function Index() {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      router.push("/login");
+      router.replace("/login");
     });
   };
 
@@ -97,8 +99,10 @@ export default function Index() {
   return (
     <View style={styles.container}>
       {/* Background Elements */}
-      <View style={styles.backgroundCircle1} />
-      <View style={styles.backgroundCircle2} />
+      <View style={styles.background}>
+        <View style={styles.orangeCircle} />
+        <View style={styles.lightOrangeCircle} />
+      </View>
       
       {/* Header */}
       <Animated.View 
@@ -148,12 +152,18 @@ export default function Index() {
           <View style={styles.logoContainer}>
             <View style={styles.logoBackground} />
             <View style={styles.logo}>
-              <Text style={styles.logoText}>👋</Text>
+              <Image 
+                source={require('@/assets/images/logo.png')} 
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </View>
             <View style={styles.logoPulse} />
           </View>
-          <Text style={styles.appName}>{t("welcome.title")}</Text>
-          <Text style={styles.appNameChinese}>{t("welcome.chineseTitle")}</Text>
+          <Text style={styles.appName}>Mingle</Text>
+          <Text style={styles.appSubtitle}>
+            {i18n.language === "en" ? "Connect • Share • Enjoy" : "連接 • 分享 • 享受"}
+          </Text>
         </Animated.View>
 
         {/* Welcome Message */}
@@ -166,7 +176,11 @@ export default function Index() {
             }
           ]}
         >
-          <Text style={styles.welcomeText}>{t("welcome.subtitle")}</Text>
+          <Text style={styles.welcomeText}>
+            {i18n.language === "en" 
+              ? "Your gateway to meaningful connections and joyful moments"
+              : "開啟有意義的聯繫和歡樂時刻的大門"}
+          </Text>
         </Animated.View>
 
         {/* Get Started Button with Modern Design */}
@@ -182,7 +196,9 @@ export default function Index() {
             activeOpacity={0.8}
           >
             <View style={styles.buttonBackground} />
-            <Text style={styles.buttonText}>{t("welcome.getStarted")}</Text>
+            <Text style={styles.buttonText}>
+              {i18n.language === "en" ? "Get Started" : "開始使用"}
+            </Text>
             <View style={styles.buttonIcon}>
               <Text style={styles.buttonIconText}>→</Text>
             </View>
@@ -200,9 +216,9 @@ export default function Index() {
         ]}
       >
         <Text style={styles.footerText}>
-          {t("welcome.alreadyHaveAccount")}{" "}
-          <Text style={styles.loginLink} onPress={goToLogin}>
-            {t("welcome.signIn")}
+          {i18n.language === "en" ? "Already have an account? " : "已有帳戶？ "}
+          <Text style={styles.loginLink} onPress={() => router.replace("/login")}>
+            {i18n.language === "en" ? "Sign In" : "立即登入"}
           </Text>
         </Text>
       </Animated.View>
@@ -216,32 +232,37 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     paddingHorizontal: 24,
   },
-  backgroundCircle1: {
+  background: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  orangeCircle: {
     position: "absolute",
     top: -100,
     right: -100,
     width: 300,
     height: 300,
     borderRadius: 150,
-    backgroundColor: COLORS.primaryLight,
-    opacity: 0.1,
+    backgroundColor: "rgba(230, 126, 34, 0.08)",
   },
-  backgroundCircle2: {
+  lightOrangeCircle: {
     position: "absolute",
     bottom: -150,
     left: -150,
     width: 400,
     height: 400,
     borderRadius: 200,
-    backgroundColor: COLORS.accent,
-    opacity: 0.05,
+    backgroundColor: "rgba(243, 156, 18, 0.05)",
   },
   header: {
     paddingTop: Platform.OS === "ios" ? 60 : 40,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 80,
+    marginBottom: 60,
   },
   languageSwitcher: {
     flex: 1,
@@ -249,13 +270,15 @@ const styles = StyleSheet.create({
   languageButton: {
     padding: 12,
     alignSelf: "flex-start",
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 20,
-    shadowColor: COLORS.shadow,
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 4,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
   },
   languageText: {
     color: COLORS.primary,
@@ -273,7 +296,7 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   locationBadge: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
@@ -282,6 +305,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   location: {
     fontSize: 12,
@@ -295,7 +320,7 @@ const styles = StyleSheet.create({
   },
   logoSection: {
     alignItems: "center",
-    marginBottom: 60,
+    marginBottom: 50,
   },
   logoContainer: {
     position: "relative",
@@ -303,11 +328,10 @@ const styles = StyleSheet.create({
   },
   logoBackground: {
     position: "absolute",
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: COLORS.primaryLight,
-    opacity: 0.1,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: "rgba(243, 156, 18, 0.1)",
     top: -20,
     left: -20,
   },
@@ -315,14 +339,20 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.card,
     justifyContent: "center",
     alignItems: "center",
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.2,
     shadowRadius: 20,
     elevation: 8,
+    borderWidth: 2,
+    borderColor: COLORS.primaryLight,
+  },
+  logoImage: {
+    width: 60,
+    height: 60,
   },
   logoPulse: {
     position: "absolute",
@@ -330,29 +360,25 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     borderWidth: 2,
-    borderColor: COLORS.primaryLight,
-    opacity: 0.3,
+    borderColor: "rgba(243, 156, 18, 0.3)",
     top: -10,
     left: -10,
-  },
-  logoText: {
-    fontSize: 40,
-    color: COLORS.white,
   },
   appName: {
     fontSize: 42,
     fontWeight: "bold",
-    color: COLORS.text,
-    marginBottom: 8,
-    letterSpacing: -0.5,
-  },
-  appNameChinese: {
-    fontSize: 26,
     color: COLORS.primary,
-    fontWeight: "600",
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
+  appSubtitle: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    fontWeight: "500",
+    letterSpacing: 0.3,
   },
   welcomeSection: {
-    marginBottom: 60,
+    marginBottom: 50,
     maxWidth: 300,
   },
   welcomeText: {
@@ -360,6 +386,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: "center",
     lineHeight: 24,
+    fontWeight: "400",
   },
   button: {
     backgroundColor: COLORS.primary,
@@ -377,6 +404,8 @@ const styles = StyleSheet.create({
     elevation: 8,
     position: "relative",
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.primaryDark,
   },
   buttonBackground: {
     position: "absolute",
@@ -393,6 +422,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
     marginRight: 8,
+    letterSpacing: 0.5,
   },
   buttonIcon: {
     width: 20,
@@ -414,6 +444,7 @@ const styles = StyleSheet.create({
   footerText: {
     color: COLORS.textSecondary,
     fontSize: 14,
+    fontWeight: "500",
   },
   loginLink: {
     color: COLORS.primary,

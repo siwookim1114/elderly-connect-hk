@@ -39,7 +39,8 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-dev-client"  // ← Add this line
     ],
     "experiments": {
       "typedRoutes": true,
