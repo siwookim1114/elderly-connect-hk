@@ -1,10 +1,8 @@
 .DS_Store
-docs
-Nodejs/
 __pycache__/
 FastAPI APP/uploads/
+FastAPI APP/data/
+FastAPI APP/audio/
 FastAPI APP/__pycache__/
 *.pyc
-test.py
 image/
-model_test.ipynb

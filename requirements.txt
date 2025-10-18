@@ -3,3 +3,5 @@ pydantic
 uvicorn[standard]
 ollama
 python-multipart
+googletrans
+gtts
