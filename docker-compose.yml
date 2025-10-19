@@ -1,27 +1,158 @@
-version: "3.9"
-
 services:
+  # MongoDB Database
   mongodb:
-    image: mongo:latest
-    container_name: mongo_container
-    restart: always
+    image: mongo:7.0
+    container_name: elderly-connect-mongodb
+    restart: unless-stopped
     ports:
-      - "27017:27017"      # exposes MongoDB to localhost
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: community_platform
     volumes:
-      - mongo_data:/data/db
+      - mongodb_data:/data/db
+      - ./mongodb/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - elderly-connect-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
+  # Ollama LLM Server
+  ollama:
+    image: ollama/ollama:latest
+    container_name: elderly-connect-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - elderly-connect-network
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    # Note: GPU support removed for compatibility. To enable GPU, add:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  # Ollama Model Puller (one-time initialization)
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: elderly-connect-ollama-init
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - elderly-connect-network
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Waiting for Ollama server to be ready..."
+        sleep 10
+        echo "Pulling llama3.1 model..."
+        ollama pull llama3.1
+        echo "Model pulled successfully!"
+    restart: "no"
+
+  # FastAPI Backend
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile.backend
-    container_name: backend_container
-    depends_on:
-      - mongodb
+      dockerfile: Dockerfile
+    container_name: elderly-connect-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
     environment:
-      - MONGO_URI=mongodb://mongo_container:27017/
+      - MONGO_URI=mongodb://mongodb:27017
+      - MONGODB_URL=mongodb://mongodb:27017
+      - MONGODB_DB=community_platform
+      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama3.1
+      - PYTHONUNBUFFERED=1
     volumes:
       - ./backend:/app
-    command: ["sleep", "infinity"]
+      - backend_audio:/tmp/audio
+    networks:
+      - elderly-connect-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # React Frontend Web App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: elderly-connect-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    networks:
+      - elderly-connect-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  # Nginx Reverse Proxy (Optional - for production)
+  nginx:
+    image: nginx:alpine
+    container_name: elderly-connect-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    networks:
+      - elderly-connect-network
+    depends_on:
+      - backend
+      - frontend
+    profiles:
+      - production
+
+networks:
+  elderly-connect-network:
+    driver: bridge
+    name: elderly-connect-network
 
 volumes:
-  mongo_data:
+  mongodb_data:
+    name: elderly-connect-mongodb-data
+  ollama_data:
+    name: elderly-connect-ollama-data
+  backend_audio:
+    name: elderly-connect-backend-audio

@@ -1,54 +1,50 @@
+import os
+from typing import Optional
+
 import pymongo
 from dotenv import load_dotenv
-import os
-from typing import Any, Dict, List
 
 # Initializing the connection of MongoDB
 
 class ElderDB:
     """Database utility class for MongoDB used in Elderly-Connect Project"""
-    def __init__(self):
+    def __init__(self, uri: Optional[str] = None, *, timeout_ms: int = 10_000):
         load_dotenv()
-        self.uri = os.getenv("MONGO_URI")
-        # Instantiate connnection to Bakend DB
+        self.uri = uri or os.getenv("MONGO_URI")
+        if not self.uri:
+            raise RuntimeError(
+                "Missing MongoDB connection string. Set the MONGO_URI environment variable."
+            )
+
         try:
-            self.client = pymongo.MongoClient(self.uri)
-            print(f"Conected to ElderDB at {self.uri}")
-        except Exception as e:
-            print("Failed to connect to ElderDB : {e}")
-    
-    def connect_collection(self, db_name: str = None, collection_name: str = None):
+            self.client = pymongo.MongoClient(
+                self.uri, serverSelectionTimeoutMS=timeout_ms
+            )
+            # Trigger a lightweight command so connection issues surface immediately.
+            self.client.admin.command("ping")
+            print(f"Connected to ElderDB at {self.uri}")
+        except Exception as exc:
+            raise ConnectionError(f"Failed to connect to ElderDB at {self.uri}") from exc
+
+    def connect_collection(self, db_name: str, collection_name: str):
         """Connects to MongoDB and returns the specified collection"""
+        if not db_name:
+            raise ValueError("db_name must be provided.")
+        if not collection_name:
+            raise ValueError("collection_name must be provided.")
+
         try:
-            self.db = self.client[db_name]
-            self.collection = self.db[collection_name]
-            print("Successfully connected to {db_name}'s {collection_name} collection!")
-            return self.collection
-        except Exception as e:
-            print(f"Please check the db name or collection name again: {e}")
-            return None
-    
+            collection = self.client[db_name][collection_name]
+            print(f"Successfully connected to {db_name}'s {collection_name} collection!")
+            return collection
+        except Exception as exc:
+            raise RuntimeError(
+                f"Unable to access collection '{collection_name}' in database '{db_name}'."
+            ) from exc
+
     # Connection Cleanup
     def close_connection(self):
         """Close ElderDB connection"""
         self.client.close()
         print("MongoDB Connection Closed.")
-
-
-    
-
-    
-    
-    
-
-    
-
-
-
-
-
-
-        
-
-
 
