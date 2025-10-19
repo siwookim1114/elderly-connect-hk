@@ -14,6 +14,269 @@ _A comprehensive FastAPI service that turns your photos into vivid narratives us
 
 ---
 
+## 🔄 Recent Updates - MongoDB Integration
+
+### Major Architecture Changes
+
+Your Memory Garden FastAPI has been upgraded from JSON file storage to a **production-ready MongoDB backend** with significant improvements:
+
+### 🗄️ Database Migration
+
+**From:** JSON file-based storage (`stories.json`)  
+**To:** MongoDB with proper async operations and indexing
+
+#### New Database Configuration
+
+```python
+# Environment Variables
+MONGODB_URI = "mongodb://localhost:27017"          # MongoDB connection string
+MONGODB_DB_NAME = "community_platform"            # Database name
+MONGODB_COLLECTION_NAME = "stories"               # Collection for stories
+```
+
+#### ElderDB Integration
+
+The application now uses a custom `ElderDB` class loaded from the Backend module:
+
+```python
+# Dynamic import from Backend/backend/agents/utils/mongo.py
+ElderDB = _load_elder_db()
+elder_db = ElderDB()
+story_collection = elder_db.connect_collection(
+    db_name=MONGODB_DB_NAME,
+    collection_name=MONGODB_COLLECTION_NAME
+)
+```
+
+### 🚀 Performance Improvements
+
+#### Async MongoDB Operations
+
+All database operations are now fully asynchronous:
+
+```python
+# Before (synchronous JSON operations)
+def add(self, record: StoryRecord) -> StoryRecord:
+    # File I/O operations
+
+# After (async MongoDB operations)
+async def add(self, record: StoryRecord) -> StoryRecord:
+    def _insert() -> str:
+        result = self._collection.insert_one(self._serialize(record))
+        return str(result.inserted_id)
+    inserted_id = await run_in_threadpool(_insert)
+    return record.model_copy(update={"id": inserted_id})
+```
+
+#### Database Indexing
+
+Automatic index creation for optimized queries:
+
+```python
+@app.on_event("startup")
+async def on_startup() -> None:
+    await story_repository.ensure_indexes()  # Creates index on 'created_at'
+```
+
+### 🔧 Updated Dependencies
+
+The application now requires the following packages (see `Memory-garden/requirements.txt`):
+
+```txt
+fastapi                 # FastAPI web framework
+pydantic               # Data validation and serialization
+uvicorn[standard]      # ASGI server
+ollama                 # Ollama client for AI model interaction
+python-multipart       # File upload support
+googletrans            # Google Translate API client
+gtts                   # Google Text-to-Speech
+# MongoDB integration (commented out - using custom ElderDB)
+# motor                # Async MongoDB driver
+# PyMongo>=4.9,<5      # MongoDB Python driver
+```
+
+#### Installation Command
+
+```bash
+pip install -r Memory-garden/requirements.txt
+```
+
+### 🗄️ Database Architecture
+
+#### MongoDB Integration via ElderDB
+
+The application uses a custom `ElderDB` class dynamically loaded from the Backend module:
+
+```python
+# Dynamic import from Backend/backend/agents/utils/mongo.py
+ElderDB = _load_elder_db()
+elder_db = ElderDB()
+story_collection = elder_db.connect_collection(
+    db_name="community_platform",
+    collection_name="stories"
+)
+```
+
+### 🆔 ID Management System
+
+#### MongoDB ObjectId Integration
+
+- **Story IDs**: Now use MongoDB ObjectId format instead of UUID
+- **Photo IDs**: Still use UUID for file system consistency
+- **Validation**: Proper ObjectId validation with error handling
+
+```python
+# ID Validation Example
+try:
+    object_id = ObjectId(story_id)
+except (InvalidId, TypeError):
+    return None  # Handle invalid ID gracefully
+```
+
+### 📊 Data Model Changes
+
+#### StoryRecord Serialization
+
+Enhanced serialization for MongoDB compatibility:
+
+```python
+def _serialize(self, record: StoryRecord) -> dict:
+    payload = record.model_dump(mode="python", exclude_none=True)
+    payload.pop("id", None)  # MongoDB handles _id separately
+    return payload
+
+def _deserialize(self, payload: dict) -> StoryRecord:
+    data = payload.copy()
+    mongo_id = data.pop("_id", None)
+    if mongo_id is not None:
+        data["id"] = str(mongo_id)  # Convert ObjectId to string
+    return StoryRecord(**data)
+```
+
+### 🔌 Connection Management
+
+#### Startup and Shutdown Events
+
+Proper database connection lifecycle management:
+
+```python
+@app.on_event("startup")
+async def on_startup() -> None:
+    await story_repository.ensure_indexes()
+
+@app.on_event("shutdown")
+async def on_shutdown() -> None:
+    elder_db.close_connection()  # Clean database connection closure
+```
+
+### 🛠️ Migration Guide
+
+#### For Existing JSON Data
+
+If you have existing JSON story data, you can migrate it:
+
+```python
+# Migration script (run once)
+import json
+from pathlib import Path
+
+# Read old JSON data
+old_data = json.loads(Path("data/stories.json").read_text())
+
+# Insert into MongoDB
+for story_data in old_data:
+    story_record = StoryRecord(**story_data)
+    await story_repository.add(story_record)
+```
+
+#### Environment Setup
+
+```bash
+# Set MongoDB connection string
+export MONGODB_URI="mongodb://localhost:27017"
+export MONGODB_DB_NAME="community_platform"
+export MONGODB_COLLECTION_NAME="stories"
+
+# For production with authentication
+export MONGODB_URI="mongodb://username:password@localhost:27017/database"
+```
+
+### 🔒 Production Considerations
+
+#### Security Enhancements
+
+- **Connection String Security**: Use environment variables for credentials
+- **Database Authentication**: Support for MongoDB authentication
+- **Connection Pooling**: Automatic connection management via ElderDB
+
+#### Scalability Improvements
+
+- **Horizontal Scaling**: Ready for MongoDB replica sets
+- **Indexing Strategy**: Optimized queries with proper indexes
+- **Async Operations**: Non-blocking database operations
+- **Connection Pooling**: Efficient resource utilization
+
+### 🧪 Testing MongoDB Integration
+
+#### Local Development
+
+```bash
+# Start MongoDB locally
+mongod --dbpath /usr/local/var/mongodb
+
+# Or with Docker
+docker run -d -p 27017:27017 --name mongodb mongo:latest
+
+# Test the connection
+python -c "from pymongo import MongoClient; print(MongoClient().server_info())"
+```
+
+#### API Testing
+
+```bash
+# Test story creation (should return MongoDB ObjectId)
+curl -X POST "http://localhost:8000/upload/stories" \
+  -F "photos=@test.jpg" \
+  -F "date=2024-05-24" \
+  -F "weather=Sunny" \
+  -F "location=Test Location"
+
+# Response will include MongoDB ObjectId:
+# {"id": "507f1f77bcf86cd799439011", ...}
+```
+
+### 🔄 Backward Compatibility
+
+#### API Endpoints Unchanged
+
+All existing API endpoints work the same way:
+
+- ✅ `POST /upload/stories` - Same functionality
+- ✅ `GET /stories` - Same response format
+- ✅ `GET /stories/{id}` - Now accepts MongoDB ObjectId
+- ✅ `PUT /stories/{id}/photos` - Enhanced performance
+- ✅ `DELETE /stories/{id}/photos` - Atomic operations
+
+#### Response Format Consistency
+
+The API responses maintain the same structure, with MongoDB ObjectIds converted to strings for JSON compatibility.
+
+### 🚨 Breaking Changes
+
+1. **Story IDs**: Now MongoDB ObjectIds instead of UUIDs
+2. **Database Dependency**: Requires MongoDB server running
+3. **Environment Variables**: New MongoDB configuration required
+
+### 🔮 Future Enhancements Enabled
+
+- **Advanced Querying**: Complex MongoDB queries for filtering and search
+- **Aggregation Pipelines**: Advanced analytics on story data
+- **GridFS Support**: Large file storage for high-resolution images
+- **Replica Sets**: High availability and read scaling
+- **Sharding**: Horizontal scaling for massive datasets
+
+This MongoDB integration provides a solid foundation for production deployment with enterprise-grade data persistence and scalability.
+
 ## ✨ Features
 
 🤖 **AI-Powered Storytelling** - Generate compelling narratives using Ollama's LLaVA vision-language model  
@@ -40,8 +303,8 @@ _A comprehensive FastAPI service that turns your photos into vivid narratives us
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/Memory-Garden.git
-cd Memory-Garden
+git clone https://github.com/siwookim1114/elderly-connect-hk.git
+cd elderly-connect-hk
 
 # Create and activate virtual environment
 python -m venv venv
@@ -50,7 +313,20 @@ source venv/bin/activate  # On Mac/Linux
 venv\Scripts\activate     # On Windows
 
 # Install dependencies
-pip install fastapi uvicorn python-multipart ollama googletrans==3.1.0a0 gtts
+pip install -r Memory-garden/requirements.txt
+```
+
+### Setup MongoDB (Required)
+
+```bash
+# Install MongoDB (macOS)
+brew tap mongodb/brew
+brew install mongodb-community
+
+# Start MongoDB service
+brew services start mongodb/brew/mongodb-community
+
+# MongoDB will be available at: mongodb://localhost:27017
 ```
 
 ### Setup Ollama
@@ -63,9 +339,24 @@ ollama serve
 ollama pull llava
 ```
 
+### Environment Configuration
+
+```bash
+# Set required environment variables
+export MONGODB_URI="mongodb://localhost:27017"
+export MONGODB_DB_NAME="community_platform"
+export MONGODB_COLLECTION_NAME="stories"
+```
+
 ### Run the Application
 
 ```bash
+# Ensure MongoDB is running
+brew services start mongodb/brew/mongodb-community
+
+# Ensure Ollama is running
+ollama serve
+
 # Navigate to Memory-garden directory
 cd "Memory-garden"
 
@@ -75,6 +366,10 @@ uvicorn main:app --reload
 # API available at: http://localhost:8000
 # Documentation: http://localhost:8000/docs
 ```
+
+### 🌐 Try the API Instantly!
+
+**Navigate to `http://localhost:8000/docs` to access the interactive API documentation where you can test all endpoints directly in your browser!**
 
 ## 📡 API Reference
 
@@ -122,8 +417,7 @@ Upload photos with metadata and generate AI-powered story.
     }
   ],
   "story": "The golden hour cast its warm glow across Central Park as I captured this perfect moment...",
-  "created_at": "2024-05-24T18:30:00Z",
-  "updated_at": "2024-05-24T18:30:00Z"
+  "created_at": "2024-05-24T18:30:00Z"
 }
 ```
 
@@ -298,13 +592,22 @@ tts.save(audio_file_path)
 ## 📁 Project Structure
 
 ```
-Memory-garden/
-├── main.py              # Main FastAPI application
-├── uploads/             # Photo storage directory
-├── data/                # JSON persistence layer
-│   └── stories.json     # Story database
-└── audio/               # Generated Cantonese audio files
-    └── {story_id}_cantonese.mp3
+elderly-connect-hk/
+├── Memory-garden/              # Main FastAPI application
+│   ├── main.py                 # FastAPI app with MongoDB integration
+│   ├── requirements.txt        # Python dependencies
+│   ├── uploads/                # Photo storage directory
+│   ├── data/                   # Legacy JSON storage (deprecated)
+│   └── audio/                  # Generated Cantonese audio files
+│       └── {story_id}_cantonese.mp3
+├── Backend/                    # Backend infrastructure
+│   └── elderly-connect-hk-main/
+│       └── backend/
+│           └── agents/
+│               └── utils/
+│                   └── mongo.py    # ElderDB MongoDB interface
+├── Nodejs/                     # Legacy Node.js implementation (gitignored)
+└── README.md                   # This documentation
 ```
 
 ## ⚙️ Configuration
@@ -312,18 +615,38 @@ Memory-garden/
 ### Environment Variables
 
 ```bash
+# MongoDB Configuration (Required)
+MONGODB_URI="mongodb://localhost:27017"
+MONGODB_DB_NAME="community_platform"
+MONGODB_COLLECTION_NAME="stories"
+
 # Ollama Configuration
 OLLAMA_MODEL=llava
 OLLAMA_HOST=http://localhost:11434
 
 # File Paths
 UPLOAD_DIR=uploads
+AUDIO_DIR=audio
+```
+
+### Production Environment
+
+```bash
+# For production with MongoDB authentication
+export MONGODB_URI="mongodb://username:password@hostname:27017/database"
+
+# For MongoDB Atlas
+export MONGODB_URI="mongodb+srv://username:password@cluster.mongodb.net/database"
+```
+
 DATA_DIR=data
 AUDIO_DIR=audio
 
 # API Configuration
+
 MAX_PHOTOS_PER_UPLOAD=10
-```
+
+````
 
 ### Model Configuration
 
@@ -335,7 +658,7 @@ OLLAMA_STORY_PROMPT = (
     "in the first person. Avoid bullet points and reference visual details "
     "from the images when possible."
 )
-```
+````
 
 ## 🧪 Testing
 

@@ -6,3 +6,4 @@ FastAPI APP/audio/
 FastAPI APP/__pycache__/
 *.pyc
 image/
+.venv

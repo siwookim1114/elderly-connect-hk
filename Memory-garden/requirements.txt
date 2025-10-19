@@ -5,3 +5,5 @@ ollama
 python-multipart
 googletrans
 gtts
+# motor
+# PyMongo>=4.9,<5
