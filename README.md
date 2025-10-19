@@ -631,14 +631,6 @@ AUDIO_DIR=audio
 
 ### Production Environment
 
-```bash
-# For production with MongoDB authentication
-export MONGODB_URI="mongodb://username:password@hostname:27017/database"
-
-# For MongoDB Atlas
-export MONGODB_URI="mongodb+srv://username:password@cluster.mongodb.net/database"
-```
-
 DATA_DIR=data
 AUDIO_DIR=audio
 
