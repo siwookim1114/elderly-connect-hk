@@ -1,5 +1,6 @@
 from typing import Dict, Any, List, Optional, Union
 import json
+import os
 import re
 from json import JSONDecodeError, JSONDecoder
 from langchain_ollama import ChatOllama
@@ -14,9 +15,9 @@ from agents.utils.callback_handler import PrintCallbackHandler
 from agents.utils.conversation_buffer_safe import SafeConversationMemory
 from agents.utils.mongo import ElderDB
 
+
 class HelpPostAgent:
     def __init__(self, model: str):
-        import os
         ollama_url = os.getenv('OLLAMA_URL', 'http://localhost:11434')
         self.llm = ChatOllama(
             model=model,

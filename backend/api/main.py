@@ -5,6 +5,7 @@ Provides REST API endpoints for the React Native frontend
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
 import json
@@ -150,6 +151,77 @@ async def health_check():
             "status": "unhealthy",
             "error": str(e)
         }
+
+
+@app.get("/api/redirect/community-platform")
+async def redirect_to_community_platform():
+    """
+    Redirect to the community platform.
+    This endpoint can be used by other applications to redirect users to the community platform.
+    
+    Returns:
+        RedirectResponse to localhost:3000 (community platform)
+    """
+    community_platform_url = os.getenv('COMMUNITY_PLATFORM_URL', 'http://localhost:3000')
+    return RedirectResponse(url=community_platform_url, status_code=302)
+
+
+@app.get("/api/redirect/community-platform/{user_id}")
+async def redirect_to_community_platform_with_user(user_id: str):
+    """
+    Redirect to the community platform with a specific user ID.
+    This endpoint can be used by other applications to redirect users to the community platform
+    with their user context.
+    
+    Args:
+        user_id: User ID to pass to the community platform
+    
+    Returns:
+        RedirectResponse to localhost:3000 with user parameter
+    """
+    community_platform_url = os.getenv('COMMUNITY_PLATFORM_URL', 'http://localhost:3000')
+    redirect_url = f"{community_platform_url}?user_id={user_id}"
+    return RedirectResponse(url=redirect_url, status_code=302)
+
+
+@app.get("/api/community-platform/url")
+async def get_community_platform_url():
+    """
+    Get the community platform URL as JSON.
+    This endpoint returns the URL without redirecting, useful for mobile apps
+    or when you need the URL programmatically.
+    
+    Returns:
+        JSON response with the community platform URL
+    """
+    community_platform_url = os.getenv('COMMUNITY_PLATFORM_URL', 'http://localhost:3000')
+    return {
+        "success": True,
+        "url": community_platform_url,
+        "message": "Community platform URL retrieved successfully"
+    }
+
+
+@app.get("/api/community-platform/url/{user_id}")
+async def get_community_platform_url_with_user(user_id: str):
+    """
+    Get the community platform URL with user ID as JSON.
+    This endpoint returns the URL with user parameter without redirecting.
+    
+    Args:
+        user_id: User ID to include in the URL
+    
+    Returns:
+        JSON response with the community platform URL including user parameter
+    """
+    community_platform_url = os.getenv('COMMUNITY_PLATFORM_URL', 'http://localhost:3000')
+    url_with_user = f"{community_platform_url}?user_id={user_id}"
+    return {
+        "success": True,
+        "url": url_with_user,
+        "user_id": user_id,
+        "message": "Community platform URL with user ID retrieved successfully"
+    }
 
 
 # Get all posts for a user
@@ -765,16 +837,13 @@ def _classify_intent(query: str) -> str:
 
 
 def _extract_match_text(query: str) -> str:
-    # Try quoted phrase first
     import re
     m = re.search(r'"([^"]+)"', query)
     if m:
         return m.group(1).strip()
-    # Look for words after 'about' or 'related to'
     m = re.search(r'(?:about|related to|regarding)\s+([^\.,]+)', query, re.IGNORECASE)
     if m:
         return m.group(1).strip()
-    # Fallback: last 3 words
     parts = query.strip().split()
     return ' '.join(parts[-3:]) if parts else ''
 
@@ -782,7 +851,6 @@ def _extract_match_text(query: str) -> str:
 async def _whisper_fallback(audio_path: str) -> Optional[str]:
     """Fallback STT placeholder; returns None when optional deps are not present."""
     return None
-
 
 # Run the server
 if __name__ == "__main__":
