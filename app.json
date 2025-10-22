@@ -9,7 +9,12 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "The app accesses your photos to create memory stories.",
+        "NSCameraUsageDescription": "The app accesses your camera to capture photos for memory stories.",
+        "NSMicrophoneUsageDescription": "The app accesses your microphone for audio features."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +24,13 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -40,7 +51,14 @@
         }
       ],
       "expo-font",
-      "expo-dev-client"  // ← Add this line
+      "expo-dev-client",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to create memory stories.",
+          "cameraPermission": "The app accesses your camera to capture photos for memory stories."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
