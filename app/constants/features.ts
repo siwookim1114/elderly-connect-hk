@@ -4,12 +4,12 @@ export const FEATURES: Feature[] = [
     id: "voice",
     icon: "🎙️",
     title: "home.Ting",
-    subtitle: "home.tingSubtitle", 
+    subtitle: "home.tingSubtitle",
     color: "#FED7D7",
     route: "/voice-companion",
   },
   {
-    id: "memory", 
+    id: "memory",
     icon: "📸",
     title: "home.memoryGarden",
     subtitle: "home.memorySubtitle",
@@ -34,3 +34,6 @@ export const FEATURES: Feature[] = [
     route: "/help-desk",
   },
 ];
+
+// Default export for React Router compatibility
+export default FEATURES;
