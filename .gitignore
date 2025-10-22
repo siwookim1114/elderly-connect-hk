@@ -42,3 +42,24 @@ app-example
 /ios
 /android
 .env
+
+# Log files
+*.log
+backend*.log
+*_log.txt
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+Thumbs.db

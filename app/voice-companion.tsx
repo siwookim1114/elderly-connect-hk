@@ -1,6 +1,5 @@
 import { Audio } from "expo-av";
 import * as FileSystem from "expo-file-system/legacy";
-import * as Sharing from "expo-sharing";
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -24,6 +23,7 @@ const COLORS = {
   success: "#4CAF50",
   error: "#F44336",
   recording: "#FF5252",
+  warning: "#FF9800",
 };
 
 type Message = {
@@ -43,37 +43,17 @@ export default function VoiceCompanion() {
   const [currentLanguage, setCurrentLanguage] = useState<
     "english" | "cantonese"
   >("english");
+  const [permissionsGranted, setPermissionsGranted] = useState<boolean | null>(
+    null
+  );
+  const [serverStatus, setServerStatus] = useState<string>("unknown");
   const recordingRef = useRef<Audio.Recording | null>(null);
   const soundRef = useRef<Audio.Sound | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
-    const setupAudio = async () => {
-      try {
-        const { status } = await Audio.requestPermissionsAsync();
-        if (status !== "granted") {
-          Alert.alert(
-            "Permission Required",
-            "Microphone permission is required to use this app"
-          );
-          return;
-        }
-
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: false,
-          shouldDuckAndroid: true,
-          playThroughEarpieceAndroid: false,
-        });
-
-        console.log("✅ Audio setup complete");
-      } catch (error) {
-        console.error("Audio setup error:", error);
-        Alert.alert("Setup Error", "Failed to initialize audio");
-      }
-    };
     setupAudio();
+    checkServerStatus(); // Check server on app start
 
     return () => {
       if (soundRef.current) {
@@ -91,47 +71,147 @@ export default function VoiceCompanion() {
     }, 100);
   }, [conversation]);
 
+  const setupAudio = async () => {
+    try {
+      console.log("🎤 Requesting microphone permissions...");
+      const { status } = await Audio.requestPermissionsAsync();
+
+      if (status === "granted") {
+        console.log("✅ Microphone permissions granted");
+        setPermissionsGranted(true);
+
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
+      } else {
+        console.log("❌ Microphone permissions denied");
+        setPermissionsGranted(false);
+      }
+    } catch (error) {
+      console.error("Audio setup error:", error);
+      setPermissionsGranted(false);
+    }
+  };
+
+  const checkServerStatus = async () => {
+    try {
+      console.log("🔍 Checking server status...");
+
+      // Add timeout for health check
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.QUICK_TIMEOUT);
+
+      const response = await fetch(`${API_CONFIG.BASE_URL}/health`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const data = await response.json();
+        setServerStatus("connected");
+        console.log("✅ Server status:", data);
+      } else {
+        setServerStatus("error");
+        console.log("❌ Server health check failed");
+      }
+    } catch (error) {
+      setServerStatus("disconnected");
+      console.error("❌ Cannot reach server:", error);
+    }
+  };
+
   const toggleLanguage = () => {
     setCurrentLanguage(currentLanguage === "english" ? "cantonese" : "english");
   };
 
+  const requestPermissions = async () => {
+    try {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status === "granted") {
+        setPermissionsGranted(true);
+        await setupAudio();
+        Alert.alert("✅ Success", "Microphone permissions granted!");
+      } else {
+        setPermissionsGranted(false);
+        Alert.alert("❌ Permission Denied", "Microphone access is required.");
+      }
+    } catch (error) {
+      console.error("Permission request error:", error);
+      setPermissionsGranted(false);
+    }
+  };
+
   const startRecording = async () => {
     try {
+      if (serverStatus !== "connected") {
+        Alert.alert("Server Issue", "Please check server connection first.");
+        return;
+      }
+
+      if (permissionsGranted !== true) {
+        await requestPermissions();
+        return;
+      }
+
       console.log("🎤 Starting recording...");
       setIsRecording(true);
 
+      // Shorter recording with lower quality for faster processing
+      const recordingOptions = {
+        android: {
+          extension: ".wav",
+          outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_DEFAULT,
+          audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_DEFAULT,
+          sampleRate: 16000,
+          numberOfChannels: 1,
+          bitRate: 128000, // Higher bitrate for better quality
+        },
+        ios: {
+          extension: ".wav",
+          outputFormat: Audio.RECORDING_OPTION_IOS_OUTPUT_FORMAT_LINEARPCM,
+          sampleRate: 16000,
+          numberOfChannels: 1,
+          bitRate: 128000,
+          linearPCMBitDepth: 16,
+          linearPCMIsBigEndian: false,
+          linearPCMIsFloat: false,
+        },
+      };
+
       const recording = new Audio.Recording();
-      await recording.prepareToRecordAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
+      await recording.prepareToRecordAsync(recordingOptions);
       await recording.startAsync();
       recordingRef.current = recording;
 
       console.log("✅ Recording started");
     } catch (error) {
       console.error("Failed to start recording", error);
-      Alert.alert(
-        "Error",
-        "Failed to start recording. Please check microphone permissions."
-      );
       setIsRecording(false);
+      Alert.alert(
+        "Recording Error",
+        "Failed to start recording. Please try again."
+      );
     }
   };
 
   const stopRecording = async () => {
     try {
-      if (!recordingRef.current) {
-        console.log("⚠️  No active recording");
-        return;
-      }
+      if (!recordingRef.current) return;
 
-      console.log("⏹️  Stopping recording...");
+      console.log("⏹️ Stopping recording...");
       await recordingRef.current.stopAndUnloadAsync();
       const uri = recordingRef.current.getURI();
       setIsRecording(false);
       setIsProcessing(true);
 
-      console.log("📁 Recording saved to:", uri);
+      console.log("📁 Recording saved:", uri);
 
       const userMessageId = Date.now().toString();
       const userMessage: Message = {
@@ -159,13 +239,12 @@ export default function VoiceCompanion() {
     try {
       console.log("🔄 Processing audio...");
 
-      // Read audio file as binary data and convert to base64
+      // Read and limit audio size
       const audioFile = await FileSystem.readAsStringAsync(audioUri, {
         encoding: "base64",
       });
 
-      console.log(`📊 Audio data length: ${audioFile.length} characters`);
-      console.log(`🌐 Sending to: ${API_CONFIG.BASE_URL}/process-voice`);
+      console.log(`📊 Audio data: ${audioFile.length} chars`);
 
       const controller = new AbortController();
       const timeoutId = setTimeout(
@@ -176,13 +255,11 @@ export default function VoiceCompanion() {
       try {
         const response = await fetch(`${API_CONFIG.BASE_URL}/process-voice`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             audio: audioFile,
             language: currentLanguage,
-            mimeType: Platform.OS === "ios" ? "audio/m4a" : "audio/3gp",
+            mimeType: "audio/wav",
           }),
           signal: controller.signal,
         });
@@ -192,14 +269,13 @@ export default function VoiceCompanion() {
         console.log("📡 Response status:", response.status);
 
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error("❌ Server error response:", errorText);
           throw new Error(`Server error: ${response.status}`);
         }
 
         const result = await response.json();
         console.log("✅ Success! Received response");
 
+        // Update user message with transcript
         setConversation((prev) =>
           prev.map((msg) =>
             msg.id === userMessageId
@@ -208,15 +284,17 @@ export default function VoiceCompanion() {
           )
         );
 
+        // Add AI response
         const aiMessage: Message = {
           id: (Date.now() + 1).toString(),
-          text: result.reply || "No response",
+          text: result.reply || "No response received",
           isUser: false,
           timestamp: new Date(),
           language: result.detectedLanguage || currentLanguage,
         };
         setConversation((prev) => [...prev, aiMessage]);
 
+        // Play audio if available
         if (result.audio) {
           await playAudio(result.audio);
         }
@@ -224,35 +302,34 @@ export default function VoiceCompanion() {
         clearTimeout(timeoutId);
 
         if (fetchError.name === "AbortError") {
-          throw new Error("Request timeout - server took too long to respond");
+          throw new Error(
+            "Request took too long. The server might be busy. Please try a shorter message."
+          );
         }
         throw fetchError;
       }
     } catch (error: any) {
       console.error("❌ Processing error:", error);
 
-      let errorMessage = "Unknown error occurred";
-      let instructions = "";
+      let errorMessage = error.message || "Processing failed";
+      let suggestions = "";
 
       if (
-        error.message?.includes("Network request failed") ||
-        error.message?.includes("Failed to fetch")
+        errorMessage.includes("timeout") ||
+        errorMessage.includes("too long")
       ) {
-        errorMessage = "Cannot connect to backend server";
-        instructions = `\n\nTroubleshooting:\n1. Flask server running? Check terminal\n2. Same WiFi network?\n3. Correct IP in config.js?\n   Current: ${API_CONFIG.BASE_URL}\n4. Try: ${API_CONFIG.BASE_URL}/health in browser`;
-      } else if (error.message?.includes("timeout")) {
-        errorMessage = "Request timeout";
-        instructions = "\n\nThe server took too long to respond. Try again.";
-      } else {
-        errorMessage = error.message || "Processing failed";
+        suggestions =
+          "\n\n💡 Try: Shorter messages • Better internet • Check server";
+      } else if (errorMessage.includes("Network request failed")) {
+        suggestions = `\n\n🔧 Check: Server running? • Correct IP? • Same WiFi?\nCurrent IP: ${API_CONFIG.BASE_URL}`;
       }
 
-      Alert.alert("Connection Error", errorMessage + instructions);
+      Alert.alert("Processing Error", errorMessage + suggestions);
 
       setConversation((prev) =>
         prev.map((msg) =>
           msg.id === userMessageId
-            ? { ...msg, text: "❌ Failed to process" }
+            ? { ...msg, text: "❌ " + errorMessage }
             : msg
         )
       );
@@ -263,10 +340,9 @@ export default function VoiceCompanion() {
 
   const playAudio = async (audioBase64: string) => {
     try {
-      console.log("🔊 Playing audio response...");
+      console.log("🔊 Playing audio...");
       setIsPlaying(true);
 
-      // Clean base64 data (remove data URL prefix if present)
       const cleanBase64 = audioBase64.replace(
         /^data:audio\/[a-z]+;base64,/,
         ""
@@ -274,160 +350,129 @@ export default function VoiceCompanion() {
 
       if (soundRef.current) {
         await soundRef.current.unloadAsync();
-        soundRef.current = null;
       }
 
       if (Platform.OS === "web") {
-        // For web, use simple HTML5 audio
-        const audioData = `data:audio/mp3;base64,${cleanBase64}`;
-        const audio = new (window as any).Audio(audioData);
-
-        audio.onended = () => {
-          console.log("✅ Audio playback finished");
+        const audio = new Audio(`data:audio/mp3;base64,${cleanBase64}`);
+        audio.onended = () => setIsPlaying(false);
+        audio.onerror = () => {
           setIsPlaying(false);
+          Alert.alert("Playback Error", "Failed to play audio");
         };
-
-        audio.onerror = (error: any) => {
-          console.error("❌ Web audio playback error:", error);
-          setIsPlaying(false);
-          Alert.alert("Playback Error", "Failed to play audio response");
-        };
-
         await audio.play();
-        console.log("▶️  Web audio playing");
       } else {
-        // For mobile, write base64 to a temporary mp3 file and play it
-        try {
-          const fileName = `voice_response_${Date.now()}.mp3`;
-          const fileUri = `${FileSystem.cacheDirectory}${fileName}`;
-          await FileSystem.writeAsStringAsync(fileUri, cleanBase64, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
+        const fileName = `response_${Date.now()}.mp3`;
+        const fileUri = `${FileSystem.cacheDirectory}${fileName}`;
+        await FileSystem.writeAsStringAsync(fileUri, cleanBase64, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
 
-          const { sound } = await Audio.Sound.createAsync(
-            { uri: fileUri },
-            { shouldPlay: true }
-          );
+        const { sound } = await Audio.Sound.createAsync({ uri: fileUri });
+        soundRef.current = sound;
 
-          soundRef.current = sound;
-          await sound.playAsync();
+        sound.setOnPlaybackStatusUpdate((status: any) => {
+          if (status.didJustFinish) {
+            setIsPlaying(false);
+            FileSystem.deleteAsync(fileUri, { idempotent: true });
+          }
+        });
 
-          sound.setOnPlaybackStatusUpdate((status: any) => {
-            if (status.didJustFinish) {
-              console.log("✅ Audio playback finished");
-              setIsPlaying(false);
-              // Cleanup the temp file
-              FileSystem.deleteAsync(fileUri, { idempotent: true }).catch(
-                () => {}
-              );
-            }
-            if (status.error) {
-              console.error("❌ Playback status error:", status.error);
-              setIsPlaying(false);
-              FileSystem.deleteAsync(fileUri, { idempotent: true }).catch(
-                () => {}
-              );
-            }
-          });
-
-          console.log("▶️  Mobile audio playing");
-        } catch (mobileError) {
-          console.error("❌ Mobile audio error:", mobileError);
-          setIsPlaying(false);
-          Alert.alert(
-            "Audio Unavailable",
-            "Audio playback not supported on this device"
-          );
-        }
+        await sound.playAsync();
       }
     } catch (error) {
       console.error("❌ Playback error:", error);
       setIsPlaying(false);
-      Alert.alert("Playback Error", "Failed to play audio response");
     }
   };
 
   const clearConversation = () => {
-    Alert.alert(
-      "Clear Conversation",
-      "Are you sure you want to clear all messages?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Clear",
-          style: "destructive",
-          onPress: () => {
-            setConversation([]);
-            console.log("🗑️  Conversation cleared");
-          },
-        },
-      ]
-    );
-  };
-
-  const exportConversation = async () => {
-    try {
-      if (conversation.length === 0) {
-        Alert.alert("No Conversation", "There are no messages to export");
-        return;
-      }
-
-      const conversationText = conversation
-        .map((msg) => {
-          const time = msg.timestamp.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          });
-          return `[${time}] ${msg.isUser ? "You" : "Companion"}: ${msg.text}`;
-        })
-        .join("\n\n");
-
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const fileUri = `${FileSystem.documentDirectory}conversation_${timestamp}.txt`;
-      await FileSystem.writeAsStringAsync(fileUri, conversationText);
-
-      console.log("💾 Conversation exported to:", fileUri);
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri);
-      } else {
-        Alert.alert("Export Complete", "Conversation saved to device");
-      }
-    } catch (error) {
-      console.error("❌ Export error:", error);
-      Alert.alert("Error", "Failed to export conversation");
-    }
+    setConversation([]);
   };
 
   const testConnection = async () => {
     try {
-      console.log(`🔍 Testing connection to: ${API_CONFIG.BASE_URL}/health`);
+      console.log("🔍 Testing connection...");
+
+      // Add timeout for connection test
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.QUICK_TIMEOUT);
+
       const response = await fetch(`${API_CONFIG.BASE_URL}/health`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const data = await response.json();
+        setServerStatus("connected");
         Alert.alert(
-          "✅ Connection Success",
-          `Server is running!\n\nStatus: ${data.status}`
+          "✅ Server Connected",
+          `Status: ${data.status}\nAzure: ${data.azure_status}\nOllama: ${data.ollama_status}`
         );
-        console.log("✅ Health check passed:", data);
       } else {
-        Alert.alert(
-          "❌ Connection Failed",
-          `Server returned status: ${response.status}`
-        );
+        setServerStatus("error");
+        Alert.alert("❌ Server Error", `Status: ${response.status}`);
       }
     } catch (error: any) {
-      console.error("❌ Health check failed:", error);
+      setServerStatus("disconnected");
       Alert.alert(
-        "❌ Connection Failed",
-        `Cannot reach server at:\n${API_CONFIG.BASE_URL}\n\nError: ${error.message}`
+        "❌ Cannot Connect",
+        `Server: ${API_CONFIG.BASE_URL}\nError: ${error.message}`
       );
+    }
+  };
+
+  const quickTextTest = async () => {
+    try {
+      setIsProcessing(true);
+      const response = await fetch(`${API_CONFIG.BASE_URL}/quick-test`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: "Hello, how are you?",
+          language: currentLanguage,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        Alert.alert("✅ Text Test", `Reply: ${result.reply}`);
+      } else {
+        Alert.alert("❌ Text Test Failed", "Server error");
+      }
+    } catch (error: any) {
+      Alert.alert("❌ Text Test Failed", error.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const getStatusColor = () => {
+    switch (serverStatus) {
+      case "connected":
+        return COLORS.success;
+      case "error":
+        return COLORS.error;
+      case "disconnected":
+        return COLORS.warning;
+      default:
+        return COLORS.textSecondary;
+    }
+  };
+
+  const getStatusText = () => {
+    switch (serverStatus) {
+      case "connected":
+        return "✅ Server Connected";
+      case "error":
+        return "❌ Server Error";
+      case "disconnected":
+        return "⚠️ Server Disconnected";
+      default:
+        return "🔍 Checking Server...";
     }
   };
 
@@ -435,7 +480,19 @@ export default function VoiceCompanion() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Voice Companion</Text>
-        <Text style={styles.subtitle}>Your AI friend to talk with</Text>
+        <Text style={styles.subtitle}>Fast & Optimized Version</Text>
+
+        {/* Server Status */}
+        <View
+          style={[
+            styles.statusBar,
+            { backgroundColor: getStatusColor() + "20" },
+          ]}
+        >
+          <Text style={[styles.statusText, { color: getStatusColor() }]}>
+            {getStatusText()}
+          </Text>
+        </View>
 
         <View style={styles.headerButtons}>
           <TouchableOpacity
@@ -451,9 +508,17 @@ export default function VoiceCompanion() {
           <TouchableOpacity
             style={[styles.languageButton, styles.testButton]}
             onPress={testConnection}
-            disabled={isRecording || isProcessing || isPlaying}
+            disabled={isProcessing}
           >
             <Text style={styles.languageText}>🔍 Test</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.languageButton, styles.quickTestButton]}
+            onPress={quickTextTest}
+            disabled={isProcessing || isRecording}
+          >
+            <Text style={styles.languageText}>📝 Text</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -466,16 +531,12 @@ export default function VoiceCompanion() {
         {conversation.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>
-              {currentLanguage === "english"
-                ? "Tap the microphone to start talking with your companion"
-                : "點擊麥克風開始與您的伴侶交談"}
+              {serverStatus !== "connected"
+                ? "🔌 Connect to server first using the Test button above"
+                : currentLanguage === "english"
+                ? "Tap the microphone to start talking"
+                : "點擊麥克風開始對話"}
             </Text>
-            <TouchableOpacity
-              style={styles.testButtonLarge}
-              onPress={testConnection}
-            >
-              <Text style={styles.testButtonText}>🔍 Test Connection</Text>
-            </TouchableOpacity>
           </View>
         ) : (
           conversation.map((message) => (
@@ -494,18 +555,6 @@ export default function VoiceCompanion() {
               >
                 {message.text}
               </Text>
-              <Text
-                style={[
-                  styles.timestamp,
-                  message.isUser && styles.timestampUser,
-                ]}
-              >
-                {message.timestamp.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-                {message.language && ` • ${message.language}`}
-              </Text>
             </View>
           ))
         )}
@@ -514,7 +563,7 @@ export default function VoiceCompanion() {
           <View style={styles.statusBubble}>
             <ActivityIndicator size="small" color={COLORS.primary} />
             <Text style={styles.statusText}>
-              {isProcessing ? "Processing..." : "Playing response..."}
+              {isProcessing ? "Processing..." : "Playing..."}
             </Text>
           </View>
         )}
@@ -525,35 +574,40 @@ export default function VoiceCompanion() {
           style={[
             styles.recordButton,
             isRecording && styles.recordingButton,
-            (isProcessing || isPlaying) && styles.disabledButton,
+            (isProcessing ||
+              isPlaying ||
+              permissionsGranted !== true ||
+              serverStatus !== "connected") &&
+              styles.disabledButton,
           ]}
           onPress={isRecording ? stopRecording : startRecording}
-          disabled={isProcessing || isPlaying}
-          activeOpacity={0.8}
+          disabled={
+            isProcessing ||
+            isPlaying ||
+            permissionsGranted !== true ||
+            serverStatus !== "connected"
+          }
         >
           <Text style={styles.recordButtonText}>
-            {isRecording ? "🛑 Stop" : "🎤 Talk"}
+            {isRecording
+              ? "🛑 Stop"
+              : permissionsGranted === false
+              ? "🎤 Enable Mic"
+              : serverStatus !== "connected"
+              ? "🔌 No Server"
+              : "🎤 Talk"}
           </Text>
           {isRecording && <View style={styles.recordingIndicator} />}
         </TouchableOpacity>
 
         {conversation.length > 0 && (
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={clearConversation}
-              disabled={isRecording || isProcessing || isPlaying}
-            >
-              <Text style={styles.actionButtonText}>🗑️ Clear</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={exportConversation}
-              disabled={isRecording || isProcessing || isPlaying}
-            >
-              <Text style={styles.actionButtonText}>📤 Export</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.clearButton}
+            onPress={clearConversation}
+            disabled={isRecording || isProcessing || isPlaying}
+          >
+            <Text style={styles.clearButtonText}>🗑️ Clear</Text>
+          </TouchableOpacity>
         )}
       </View>
     </View>
@@ -563,7 +617,7 @@ export default function VoiceCompanion() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 20,
     paddingTop: Platform.OS === "ios" ? 60 : 40,
   },
@@ -574,13 +628,23 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: COLORS.text,
+    color: "#000000",
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    marginBottom: 16,
+    fontSize: 14,
+    color: "#666666",
+    marginBottom: 12,
+  },
+  statusBar: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginBottom: 12,
+  },
+  statusText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   headerButtons: {
     flexDirection: "row",
@@ -589,11 +653,14 @@ const styles = StyleSheet.create({
   languageButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    backgroundColor: COLORS.primary,
+    backgroundColor: "#1428A0",
     borderRadius: 20,
   },
   testButton: {
-    backgroundColor: COLORS.success,
+    backgroundColor: "#4CAF50",
+  },
+  quickTestButton: {
+    backgroundColor: "#FF9800",
   },
   languageText: {
     color: "#FFFFFF",
@@ -615,43 +682,24 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 16,
-    color: COLORS.textSecondary,
+    color: "#666666",
     textAlign: "center",
     lineHeight: 22,
     paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  testButtonLarge: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    backgroundColor: COLORS.success,
-    borderRadius: 25,
-  },
-  testButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
   },
   messageBubble: {
     maxWidth: "85%",
     padding: 16,
     borderRadius: 20,
     marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
   },
   userBubble: {
     alignSelf: "flex-end",
-    backgroundColor: COLORS.primary,
+    backgroundColor: "#1428A0",
   },
   aiBubble: {
     alignSelf: "flex-start",
-    backgroundColor: "#F8F9FA",
-    borderWidth: 1,
-    borderColor: "#E9ECEF",
+    backgroundColor: "#F0F0F0",
   },
   messageText: {
     fontSize: 16,
@@ -661,16 +709,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   aiText: {
-    color: COLORS.text,
-  },
-  timestamp: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-    opacity: 0.7,
-  },
-  timestampUser: {
-    color: "#FFFFFF",
+    color: "#000000",
   },
   statusBubble: {
     flexDirection: "row",
@@ -683,7 +722,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: "#666666",
     marginLeft: 8,
   },
   controls: {
@@ -691,24 +730,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   recordButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: "#1428A0",
     paddingVertical: 20,
     paddingHorizontal: 40,
     borderRadius: 50,
     minWidth: 200,
     alignItems: "center",
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
     position: "relative",
   },
   recordingButton: {
-    backgroundColor: COLORS.recording,
+    backgroundColor: "#FF5252",
   },
   disabledButton: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   recordButtonText: {
     color: "#FFFFFF",
@@ -724,21 +758,15 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: "#FFFFFF",
   },
-  actionButtons: {
-    flexDirection: "row",
+  clearButton: {
     marginTop: 16,
-    gap: 12,
-  },
-  actionButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
     backgroundColor: "#F8F9FA",
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#E9ECEF",
   },
-  actionButtonText: {
-    color: COLORS.textSecondary,
+  clearButtonText: {
+    color: "#666666",
     fontSize: 14,
     fontWeight: "500",
   },

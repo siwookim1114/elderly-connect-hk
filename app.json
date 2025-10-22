@@ -10,10 +10,16 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+<<<<<<< HEAD
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "The app accesses your photos to create memory stories.",
         "NSCameraUsageDescription": "The app accesses your camera to capture photos for memory stories.",
         "NSMicrophoneUsageDescription": "The app accesses your microphone for audio features."
+=======
+      "bundleIdentifier": "com.elderconnectappdev",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+>>>>>>> 01f4382bb9a887986cd123aa120e09957af7f135
       }
     },
     "android": {
@@ -50,6 +56,7 @@
           }
         }
       ],
+<<<<<<< HEAD
       "expo-font",
       "expo-dev-client",
       [
@@ -59,10 +66,19 @@
           "cameraPermission": "The app accesses your camera to capture photos for memory stories."
         }
       ]
+=======
+      "expo-font"
+>>>>>>> 01f4382bb9a887986cd123aa120e09957af7f135
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1b51a69c-634f-4691-9beb-234dc8d64039"
+      }
     }
   }
 }

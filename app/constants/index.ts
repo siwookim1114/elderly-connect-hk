@@ -8,3 +8,10 @@ export interface Feature {
   badge?: string;
 }
 export type Language = 'en' | 'zh';
+
+// Default export for React Router compatibility
+const constants = {
+  Language: 'en' as Language
+};
+
+export default constants;
