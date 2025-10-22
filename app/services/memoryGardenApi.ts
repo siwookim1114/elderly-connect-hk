@@ -2,7 +2,9 @@
 import axios from 'axios';
 
 // API Configuration
-const API_BASE_URL = 'http://localhost:8000'; // Change to your deployed API URL
+// Prefer environment variable (Expo) and fallback to localhost for dev
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_MEMORY_GARDEN_API_URL || 'http://localhost:8000';
 
 // Data models matching FastAPI backend
 export interface StoredPhoto {
@@ -52,7 +54,14 @@ class MemoryGardenApiService {
 
   // Upload photos and generate story
   async uploadPhotosAndGenerateStory(
-    photos: File[],
+    photos: Array<
+      | File
+      | {
+          uri: string;
+          name?: string;
+          type?: string;
+        }
+    >,
     date: string,
     weather: string,
     location: string
@@ -61,7 +70,21 @@ class MemoryGardenApiService {
     
     // Add photos to form data
     photos.forEach((photo, index) => {
-      formData.append('photos', photo);
+      // Support both web File and React Native asset objects
+      if (typeof File !== 'undefined' && photo instanceof File) {
+        formData.append('photos', photo as File);
+      } else {
+        const rnPhoto = photo as { uri: string; name?: string; type?: string };
+        const name = rnPhoto.name || `photo_${index}.jpg`;
+        const type = rnPhoto.type || 'image/jpeg';
+        // React Native FormData expects { uri, name, type }
+        formData.append('photos', {
+          // @ts-ignore - React Native FormData type
+          uri: rnPhoto.uri,
+          name,
+          type,
+        } as any);
+      }
     });
     
     // Add metadata
@@ -70,8 +93,9 @@ class MemoryGardenApiService {
     formData.append('location', location);
 
     const response = await axios.post(`${this.baseURL}/upload/stories`, formData, {
+      // Let axios set the correct Content-Type boundary automatically
       headers: {
-        'Content-Type': 'multipart/form-data',
+        ...(typeof document === 'undefined' ? {} : {}),
       },
     });
 

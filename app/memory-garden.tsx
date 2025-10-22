@@ -11,6 +11,7 @@ import {
   FlatList,
   Image,
   RefreshControl,
+  Modal,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -119,18 +120,52 @@ export default function MemoryGarden() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      const newMemory: Memory = {
-        id: Date.now().toString(),
-        title: `Memory ${memories.length + 1}`,
-        description: 'A precious moment captured',
-        imageUri: result.assets[0].uri,
-        date: new Date().toISOString().split('T')[0],
-        category: 'General',
-        story: 'This is a beautiful memory that tells a story of joy and connection.'
-      };
-      
-      const updatedMemories = [...memories, newMemory];
-      await saveMemories(updatedMemories);
+      const asset = result.assets[0];
+      const date = new Date().toISOString().split('T')[0];
+      if (apiConnected) {
+        try {
+          const name = asset.fileName || asset.uri.split('/').pop() || `photo_${Date.now()}.jpg`;
+          const type = (asset as any).mimeType || 'image/jpeg';
+          await memoryGardenApi.uploadPhotosAndGenerateStory(
+            [
+              {
+                uri: asset.uri,
+                name,
+                type,
+              },
+            ],
+            date,
+            'Clear sky',
+            'Unknown'
+          );
+          await loadMemories();
+        } catch (e) {
+          console.error('Upload failed, saving locally instead:', e);
+          const newMemory: Memory = {
+            id: Date.now().toString(),
+            title: `Memory ${memories.length + 1}`,
+            description: 'A precious moment captured',
+            imageUri: asset.uri,
+            date,
+            category: 'General',
+            story: 'This is a beautiful memory that tells a story of joy and connection.'
+          };
+          const updatedMemories = [...memories, newMemory];
+          await saveMemories(updatedMemories);
+        }
+      } else {
+        const newMemory: Memory = {
+          id: Date.now().toString(),
+          title: `Memory ${memories.length + 1}`,
+          description: 'A precious moment captured',
+          imageUri: asset.uri,
+          date,
+          category: 'General',
+          story: 'This is a beautiful memory that tells a story of joy and connection.'
+        };
+        const updatedMemories = [...memories, newMemory];
+        await saveMemories(updatedMemories);
+      }
     }
   };
 
@@ -149,18 +184,52 @@ export default function MemoryGarden() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      const newMemory: Memory = {
-        id: Date.now().toString(),
-        title: `Photo ${memories.length + 1}`,
-        description: 'A moment captured with love',
-        imageUri: result.assets[0].uri,
-        date: new Date().toISOString().split('T')[0],
-        category: 'Photo',
-        story: 'This photo captures a special moment in time, filled with warmth and memories.'
-      };
-      
-      const updatedMemories = [...memories, newMemory];
-      await saveMemories(updatedMemories);
+      const asset = result.assets[0];
+      const date = new Date().toISOString().split('T')[0];
+      if (apiConnected) {
+        try {
+          const name = asset.fileName || asset.uri.split('/').pop() || `photo_${Date.now()}.jpg`;
+          const type = (asset as any).mimeType || 'image/jpeg';
+          await memoryGardenApi.uploadPhotosAndGenerateStory(
+            [
+              {
+                uri: asset.uri,
+                name,
+                type,
+              },
+            ],
+            date,
+            'Clear sky',
+            'Unknown'
+          );
+          await loadMemories();
+        } catch (e) {
+          console.error('Upload failed, saving locally instead:', e);
+          const newMemory: Memory = {
+            id: Date.now().toString(),
+            title: `Photo ${memories.length + 1}`,
+            description: 'A moment captured with love',
+            imageUri: asset.uri,
+            date,
+            category: 'Photo',
+            story: 'This photo captures a special moment in time, filled with warmth and memories.'
+          };
+          const updatedMemories = [...memories, newMemory];
+          await saveMemories(updatedMemories);
+        }
+      } else {
+        const newMemory: Memory = {
+          id: Date.now().toString(),
+          title: `Photo ${memories.length + 1}`,
+          description: 'A moment captured with love',
+          imageUri: asset.uri,
+          date,
+          category: 'Photo',
+          story: 'This photo captures a special moment in time, filled with warmth and memories.'
+        };
+        const updatedMemories = [...memories, newMemory];
+        await saveMemories(updatedMemories);
+      }
     }
   };
 

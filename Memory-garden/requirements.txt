@@ -1,0 +1,9 @@
+fastapi
+pydantic
+uvicorn[standard]
+ollama
+python-multipart
+googletrans
+gtts
+# motor
+# PyMongo>=4.9,<5
