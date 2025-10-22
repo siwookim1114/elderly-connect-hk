@@ -3,8 +3,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import {
   Image,
-  ScrollView // Add this import
-  ,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -87,7 +86,7 @@ export default function HomeDashboard() {
           <Text style={styles.subtitle}>{t("home.tagline")}</Text>
         </View>
 
-        {/* Feature Buttons */}
+        {/* Feature Buttons - Now includes Help Desk */}
         <View style={styles.featuresContainer}>
           {FEATURES.map((feature) => (
             <FeatureButton
@@ -132,7 +131,6 @@ const styles = StyleSheet.create({
     borderRadius: 75,
     backgroundColor: 'rgba(243, 156, 18, 0.05)',
   },
-  // Replace the 'content' style with these:
   scrollView: {
     flex: 1,
   },
@@ -158,7 +156,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: COLORS.border,
     marginTop: 10,
-    marginBottom: 20, // Added margin to separate from header
+    marginBottom: 20,
   },
   languageText: {
     fontSize: 14,
@@ -171,7 +169,7 @@ const styles = StyleSheet.create({
   header: {
     paddingVertical: 20,
     alignItems: "center",
-    marginBottom: 30, // Added margin to separate from features
+    marginBottom: 30,
   },
   logoContainer: {
     width: 100,
@@ -227,6 +225,6 @@ const styles = StyleSheet.create({
   },
   featuresContainer: {
     gap: 20,
-    paddingBottom: 40, // Increased padding for better spacing
+    paddingBottom: 40,
   },
 });

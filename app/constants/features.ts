@@ -19,10 +19,18 @@ export const FEATURES: Feature[] = [
   },
   {
     id: "activity",
-    icon: "🏢", // CHANGED ICON
-    title: "home.CommunityCenter", // CHANGED TITLE KEY
-    subtitle: "home.communitySubtitle", // CHANGED SUBTITLE KEY
+    icon: "🏢",
+    title: "home.CommunityCenter",
+    subtitle: "home.communitySubtitle",
     color: "#C6F6D5",
-    route: "/ActivityDiscovery", // Keep same route or change to "/community-center"
+    route: "/ActivityDiscovery",
+  },
+  {
+    id: "help",
+    icon: "💁",
+    title: "home.helpDesk",
+    subtitle: "home.helpDeskSubtitle",
+    color: "#E9D8FD",
+    route: "/help-desk",
   },
 ];

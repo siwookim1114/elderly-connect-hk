@@ -47,6 +47,7 @@ export default function RootLayout() {
     voice: ['#FED7D7', '#E53E3E'], // Red theme
     memory: ['#FEEBC8', '#DD6B20'], // Orange theme
     activity: ['#C6F6D5', '#38A169'], // Green theme
+    help: ['#E9D8FD', '#6B46C1'], // Purple theme for Help Desk
   };
 
   // Get appropriate font family
@@ -202,6 +203,24 @@ export default function RootLayout() {
             headerBackButtonDisplayMode: "minimal",
             headerStyle: {
               backgroundColor: featureGradients.memory[0],
+            },
+            headerTintColor: mingleColors.secondary[800],
+            animation: 'slide_from_right',
+            animationDuration: 400,
+          }}
+        />
+        
+        {/* NEW: Help Desk Screen */}
+        <Stack.Screen
+          name="help-desk"
+          options={{
+            headerShown: true,
+            title: "Help Desk",
+            headerTitleAlign: "center",
+            headerShadowVisible: true,
+            headerBackButtonDisplayMode: "minimal",
+            headerStyle: {
+              backgroundColor: featureGradients.help[0],
             },
             headerTintColor: mingleColors.secondary[800],
             animation: 'slide_from_right',
