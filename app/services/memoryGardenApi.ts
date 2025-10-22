@@ -1,10 +1,12 @@
 // Memory Garden API service - Connected to FastAPI backend
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 // API Configuration
 // Prefer environment variable (Expo) and fallback to localhost for dev
-const API_BASE_URL =
+const DEFAULT_API_BASE_URL =
   process.env.EXPO_PUBLIC_MEMORY_GARDEN_API_URL || 'http://localhost:8000';
+const SERVER_URL_KEY = '@server_url';
 
 // Data models matching FastAPI backend
 export interface StoredPhoto {
@@ -46,10 +48,46 @@ export interface ApiResponse<T> {
 
 // API service class
 class MemoryGardenApiService {
-  private baseURL: string;
+  public baseURL: string;
+  private isInitialized: boolean = false;
 
-  constructor(baseURL: string = API_BASE_URL) {
+  constructor(baseURL: string = DEFAULT_API_BASE_URL) {
     this.baseURL = baseURL;
+  }
+
+  // Load saved server URL from AsyncStorage (called on-demand)
+  private async ensureInitialized() {
+    if (this.isInitialized) return;
+    
+    try {
+      // Check if we're in a browser/native environment (not SSR)
+      if (typeof window !== 'undefined') {
+        const savedUrl = await AsyncStorage.getItem(SERVER_URL_KEY);
+        if (savedUrl) {
+          this.baseURL = savedUrl;
+        }
+      }
+      this.isInitialized = true;
+    } catch (error) {
+      console.error('Error loading saved server URL:', error);
+      this.isInitialized = true; // Mark as initialized even on error
+    }
+  }
+
+  // Update server URL
+  public async updateServerUrl(newUrl: string) {
+    try {
+      this.baseURL = newUrl;
+      await AsyncStorage.setItem(SERVER_URL_KEY, newUrl);
+    } catch (error) {
+      console.error('Error saving server URL:', error);
+      throw error;
+    }
+  }
+
+  // Get current server URL
+  public getServerUrl(): string {
+    return this.baseURL;
   }
 
   // Upload photos and generate story
@@ -66,6 +104,7 @@ class MemoryGardenApiService {
     weather: string,
     location: string
   ): Promise<StoryResponse> {
+    await this.ensureInitialized();
     const formData = new FormData();
     
     // Add photos to form data
@@ -104,12 +143,14 @@ class MemoryGardenApiService {
 
   // Get all stories
   async getAllStories(): Promise<StoryResponse[]> {
+    await this.ensureInitialized();
     const response = await axios.get(`${this.baseURL}/stories`);
     return response.data;
   }
 
   // Get specific story by ID
   async getStory(storyId: string): Promise<StoryResponse> {
+    await this.ensureInitialized();
     const response = await axios.get(`${this.baseURL}/stories/${storyId}`);
     return response.data;
   }
@@ -189,6 +230,7 @@ class MemoryGardenApiService {
 
   // Health check
   async healthCheck(): Promise<boolean> {
+    await this.ensureInitialized();
     try {
       const response = await axios.get(`${this.baseURL}/`);
       return response.status === 200;

@@ -2,9 +2,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-import { Stack, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { Stack, useRouter, useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Platform } from 'react-native';
 import {
   ActivityIndicator,
   Alert,
@@ -45,6 +46,14 @@ export default function MemoryGarden() {
     checkApiConnection();
     loadMemories();
   }, []);
+
+  // Reload memories when screen comes into focus (e.g., after deleting)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('Memory Garden focused, reloading memories...');
+      loadMemories();
+    }, [apiConnected])
+  );
 
   const checkApiConnection = async () => {
     try {
@@ -122,6 +131,23 @@ export default function MemoryGarden() {
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
       const date = new Date().toISOString().split('T')[0];
+      
+      // Convert to base64 for web to persist across reloads
+      let imageUri = asset.uri;
+      if (Platform.OS === 'web' && asset.uri) {
+        try {
+          const response = await fetch(asset.uri);
+          const blob = await response.blob();
+          const reader = new FileReader();
+          imageUri = await new Promise((resolve) => {
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+        } catch (error) {
+          console.error('Error converting image to base64:', error);
+        }
+      }
+      
       if (apiConnected) {
         try {
           const name = asset.fileName || asset.uri.split('/').pop() || `photo_${Date.now()}.jpg`;
@@ -145,7 +171,7 @@ export default function MemoryGarden() {
             id: Date.now().toString(),
             title: `Memory ${memories.length + 1}`,
             description: 'A precious moment captured',
-            imageUri: asset.uri,
+            imageUri: imageUri,
             date,
             category: 'General',
             story: 'This is a beautiful memory that tells a story of joy and connection.'
@@ -158,7 +184,7 @@ export default function MemoryGarden() {
           id: Date.now().toString(),
           title: `Memory ${memories.length + 1}`,
           description: 'A precious moment captured',
-          imageUri: asset.uri,
+          imageUri: imageUri,
           date,
           category: 'General',
           story: 'This is a beautiful memory that tells a story of joy and connection.'
@@ -186,6 +212,23 @@ export default function MemoryGarden() {
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
       const date = new Date().toISOString().split('T')[0];
+      
+      // Convert to base64 for web to persist across reloads
+      let imageUri = asset.uri;
+      if (Platform.OS === 'web' && asset.uri) {
+        try {
+          const response = await fetch(asset.uri);
+          const blob = await response.blob();
+          const reader = new FileReader();
+          imageUri = await new Promise((resolve) => {
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+        } catch (error) {
+          console.error('Error converting image to base64:', error);
+        }
+      }
+      
       if (apiConnected) {
         try {
           const name = asset.fileName || asset.uri.split('/').pop() || `photo_${Date.now()}.jpg`;
@@ -209,7 +252,7 @@ export default function MemoryGarden() {
             id: Date.now().toString(),
             title: `Photo ${memories.length + 1}`,
             description: 'A moment captured with love',
-            imageUri: asset.uri,
+            imageUri: imageUri,
             date,
             category: 'Photo',
             story: 'This photo captures a special moment in time, filled with warmth and memories.'
@@ -222,7 +265,7 @@ export default function MemoryGarden() {
           id: Date.now().toString(),
           title: `Photo ${memories.length + 1}`,
           description: 'A moment captured with love',
-          imageUri: asset.uri,
+          imageUri: imageUri,
           date,
           category: 'Photo',
           story: 'This photo captures a special moment in time, filled with warmth and memories.'

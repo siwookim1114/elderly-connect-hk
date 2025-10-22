@@ -227,6 +227,20 @@ export default function RootLayout() {
             animationDuration: 400,
           }}
         />
+        
+        {/* Settings Screen */}
+        <Stack.Screen
+          name="settings"
+          options={{
+            headerShown: true,
+            title: "Settings",
+            headerTitleAlign: "center",
+            headerShadowVisible: true,
+            headerBackButtonDisplayMode: "minimal",
+            animation: 'slide_from_right',
+            animationDuration: 400,
+          }}
+        />
       </Stack>
     </>
   );

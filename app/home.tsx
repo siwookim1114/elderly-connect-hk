@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
 import React from "react";
 import { useTranslation } from "react-i18next";
@@ -59,17 +60,27 @@ export default function HomeDashboard() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Language Toggle */}
-        <TouchableOpacity
-          style={styles.languageToggle}
-          onPress={toggleLanguage}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.languageText}>
-            {currentLanguage === "en" ? "中文" : "English"}
-          </Text>
-          <Text style={styles.toggleIcon}>🌐</Text>
-        </TouchableOpacity>
+        {/* Top Bar with Language Toggle and Settings */}
+        <View style={styles.topBar}>
+          <TouchableOpacity
+            style={styles.settingsButton}
+            onPress={() => router.push('/settings')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="settings-outline" size={24} color={COLORS.primary} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.languageToggle}
+            onPress={toggleLanguage}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.languageText}>
+              {currentLanguage === "en" ? "中文" : "English"}
+            </Text>
+            <Text style={styles.toggleIcon}>🌐</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Mingle Logo and Welcome Header */}
         <View style={styles.header}>
@@ -139,8 +150,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 20,
   },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  settingsButton: {
+    backgroundColor: COLORS.card,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+  },
   languageToggle: {
-    alignSelf: "flex-end",
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: COLORS.card,
@@ -155,8 +187,6 @@ const styles = StyleSheet.create({
     gap: 6,
     borderWidth: 1.5,
     borderColor: COLORS.border,
-    marginTop: 10,
-    marginBottom: 20,
   },
   languageText: {
     fontSize: 14,

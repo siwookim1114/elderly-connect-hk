@@ -1,5 +1,6 @@
 // app/memory-detail/[id].tsx
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -9,6 +10,7 @@ import {
   Alert,
   Dimensions,
   Image,
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -19,6 +21,40 @@ import {
 import memoryGardenApi, { StoryResponse } from '../services/memoryGardenApi';
 
 const { width } = Dimensions.get('window');
+const MEMORIES_KEY = '@memories';
+
+interface LocalMemory {
+  id: string;
+  title: string;
+  description: string;
+  imageUri: string;
+  date: string;
+  story?: string;
+  category: string;
+}
+
+// Cross-platform alert helper
+const showAlert = (title: string, message?: string) => {
+  if (Platform.OS === 'web') {
+    window.alert(message ? `${title}\n\n${message}` : title);
+  } else {
+    Alert.alert(title, message);
+  }
+};
+
+// Cross-platform confirm helper
+const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+  if (Platform.OS === 'web') {
+    if (window.confirm(`${title}\n\n${message}`)) {
+      onConfirm();
+    }
+  } else {
+    Alert.alert(title, message, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'OK', onPress: onConfirm }
+    ]);
+  }
+};
 
 export default function MemoryDetail() {
   const router = useRouter();
@@ -29,6 +65,8 @@ export default function MemoryDetail() {
   const [audioLoading, setAudioLoading] = useState(false);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [localImageUri, setLocalImageUri] = useState<string | null>(null);
+  const [isLocalMemory, setIsLocalMemory] = useState(false);
 
   useEffect(() => {
     loadStory();
@@ -42,11 +80,48 @@ export default function MemoryDetail() {
 
   const loadStory = async () => {
     try {
+      // First try to load from API
       const storyData = await memoryGardenApi.getStory(id);
       setStory(storyData);
+      setIsLocalMemory(false);
     } catch (error) {
-      console.error('Error loading story:', error);
-      Alert.alert('Error', 'Failed to load memory details');
+      console.error('Error loading story from API:', error);
+      // If API fails, try to load from local storage
+      try {
+        const storedMemories = await AsyncStorage.getItem(MEMORIES_KEY);
+        if (storedMemories) {
+          const memories: LocalMemory[] = JSON.parse(storedMemories);
+          const localMemory = memories.find(m => m.id === id);
+          if (localMemory) {
+            // Convert local memory to StoryResponse format
+            const localStory: StoryResponse = {
+              id: localMemory.id,
+              date: localMemory.date,
+              weather: 'Unknown',
+              location: 'Unknown',
+              story: localMemory.story || localMemory.description,
+              photos: [
+                {
+                  id: 'local-photo',
+                  filename: 'local-image.jpg',
+                  content_type: 'image/jpeg',
+                  size: 0,
+                  path: localMemory.imageUri
+                }
+              ],
+              created_at: localMemory.date,
+              updated_at: localMemory.date
+            };
+            setStory(localStory);
+            setLocalImageUri(localMemory.imageUri);
+            setIsLocalMemory(true);
+          } else {
+            console.error('Memory not found in local storage');
+          }
+        }
+      } catch (localError) {
+        console.error('Error loading from local storage:', localError);
+      }
     } finally {
       setLoading(false);
     }
@@ -63,22 +138,28 @@ export default function MemoryDetail() {
       }
 
       const audioUrl = memoryGardenApi.getAudioStreamUrl(story.id);
+      console.log('Attempting to play audio from:', audioUrl);
+      
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: audioUrl },
         { shouldPlay: true }
       );
 
+      console.log('Audio loaded successfully');
       setSound(newSound);
       setIsPlaying(true);
 
       newSound.setOnPlaybackStatusUpdate((status) => {
         if (status.isLoaded && status.didJustFinish) {
+          console.log('Audio playback finished');
           setIsPlaying(false);
         }
       });
     } catch (error) {
       console.error('Error playing audio:', error);
-      Alert.alert('Error', 'Failed to play audio');
+      console.error('Audio URL was:', memoryGardenApi.getAudioStreamUrl(story.id));
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      showAlert('Error', `Failed to play audio: ${errorMessage}`);
     } finally {
       setAudioLoading(false);
     }
@@ -92,11 +173,56 @@ export default function MemoryDetail() {
   };
 
   const toggleAudio = () => {
+    if (isLocalMemory) {
+      showAlert(
+        'Feature Unavailable',
+        'Cantonese audio is only available for memories uploaded to the server. Local memories do not have AI-generated audio.'
+      );
+      return;
+    }
     if (isPlaying) {
       stopAudio();
     } else {
       playCantoneseAudio();
     }
+  };
+
+  const deleteMemory = async () => {
+    console.log('Delete button pressed, isLocalMemory:', isLocalMemory);
+    
+    showConfirm(
+      'Delete Memory',
+      'Are you sure you want to delete this memory? This action cannot be undone.',
+      async () => {
+        console.log('Delete confirmed, starting deletion...');
+        try {
+          if (isLocalMemory) {
+            console.log('Deleting local memory with id:', id);
+            // Delete from local storage
+            const storedMemories = await AsyncStorage.getItem(MEMORIES_KEY);
+            console.log('Current stored memories:', storedMemories);
+            if (storedMemories) {
+              const memories: LocalMemory[] = JSON.parse(storedMemories);
+              console.log('Parsed memories count:', memories.length);
+              const updatedMemories = memories.filter(m => m.id !== id);
+              console.log('Updated memories count:', updatedMemories.length);
+              await AsyncStorage.setItem(MEMORIES_KEY, JSON.stringify(updatedMemories));
+              console.log('Memory deleted successfully, navigating back...');
+            }
+            // Navigate back immediately after deletion
+            router.back();
+          } else {
+            console.log('Attempting to delete API memory (not implemented)');
+            // Delete from API (if API has delete endpoint)
+            // await memoryGardenApi.deleteStory(id);
+            showAlert('Info', 'API deletion not yet implemented');
+          }
+        } catch (error) {
+          console.error('Error deleting memory:', error);
+          showAlert('Error', 'Failed to delete memory');
+        }
+      }
+    );
   };
 
   if (loading) {
@@ -154,17 +280,23 @@ export default function MemoryDetail() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Photos Grid */}
         <View style={styles.photosContainer}>
-          {story.photos.map((photo, index) => (
-            <Image
-              key={photo.id}
-              source={{ uri: memoryGardenApi.getPhotoUrl(story.id, photo.id) }}
-              style={[
-                styles.photo,
-                story.photos.length === 1 ? styles.singlePhoto : styles.multiPhoto
-              ]}
-              resizeMode="cover"
-            />
-          ))}
+          {story.photos.map((photo, index) => {
+            // Check if this is a local memory by checking if the photo id is 'local-photo'
+            const isLocal = photo.id === 'local-photo';
+            const imageUri = isLocal ? localImageUri || '' : memoryGardenApi.getPhotoUrl(story.id, photo.id);
+            
+            return (
+              <Image
+                key={photo.id}
+                source={{ uri: imageUri }}
+                style={[
+                  styles.photo,
+                  story.photos.length === 1 ? styles.singlePhoto : styles.multiPhoto
+                ]}
+                resizeMode="cover"
+              />
+            );
+          })}
         </View>
 
         {/* Memory Info */}
@@ -174,14 +306,6 @@ export default function MemoryDetail() {
               <Ionicons name="calendar-outline" size={20} color="#718096" />
               <Text style={styles.metadataText}>{story.date}</Text>
             </View>
-            <View style={styles.metadataItem}>
-              <Ionicons name="partly-sunny-outline" size={20} color="#718096" />
-              <Text style={styles.metadataText}>{story.weather}</Text>
-            </View>
-            <View style={styles.metadataItem}>
-              <Ionicons name="location-outline" size={20} color="#718096" />
-              <Text style={styles.metadataText}>{story.location}</Text>
-            </View>
           </View>
 
           {/* Story Section */}
@@ -189,7 +313,7 @@ export default function MemoryDetail() {
             <View style={styles.storyContainer}>
               <View style={styles.storyHeader}>
                 <Ionicons name="book-outline" size={24} color="#DD6B20" />
-                <Text style={styles.storyTitle}>AI-Generated Story</Text>
+                <Text style={styles.storyTitle}>{isLocalMemory ? 'Memory Description' : 'AI-Generated Story'}</Text>
               </View>
               <Text style={styles.storyText}>{story.story}</Text>
             </View>
@@ -224,6 +348,15 @@ export default function MemoryDetail() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* Delete Button */}
+          <TouchableOpacity 
+            style={styles.deleteButton}
+            onPress={deleteMemory}
+          >
+            <Ionicons name="trash-outline" size={20} color="#E53E3E" />
+            <Text style={styles.deleteButtonText}>Delete Memory</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -361,6 +494,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     padding: 20,
     borderRadius: 12,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -397,6 +531,40 @@ const styles = StyleSheet.create({
   },
   audioButtonText: {
     color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  localNoticeContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFF5F0',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: '#DD6B20',
+  },
+  localNoticeText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#744210',
+    marginLeft: 8,
+    lineHeight: 20,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: '#E53E3E',
+  },
+  deleteButtonText: {
+    color: '#E53E3E',
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
