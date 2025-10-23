@@ -3,7 +3,11 @@ import { useTranslation } from "react-i18next";
 import { Animated, Easing, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function LoadingAnimation() {
+interface LoadingAnimationProps {
+  status?: string;
+}
+
+export default function LoadingAnimation({ status }: LoadingAnimationProps) {
   const { t } = useTranslation();
   const scale1 = useRef(new Animated.Value(0)).current;
   const scale2 = useRef(new Animated.Value(0)).current;
@@ -66,6 +70,33 @@ export default function LoadingAnimation() {
     };
   }, []);
 
+  // Determine the appropriate loading message based on status
+  const getLoadingMessage = () => {
+    switch (status) {
+      case "detectingLocation":
+        return t("activities.detectingLocation");
+      case "locationDetected":
+        return t("activities.locationDetected");
+      case "gettingRecommendations":
+        return t("activities.gettingRecommendations") || "Getting AI recommendations...";
+      case "preparingResults":
+        return t("activities.preparingResults") || "Preparing your results...";
+      default:
+        return t("activities.loading");
+    }
+  };
+
+  const getSubtextMessage = () => {
+    switch (status) {
+      case "detectingLocation":
+        return t("activities.pleaseWait");
+      case "gettingRecommendations":
+        return t("activities.pleaseWait");
+      default:
+        return t("activities.pleaseWait");
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -99,8 +130,8 @@ export default function LoadingAnimation() {
           />
         </View>
 
-        <Text style={styles.loadingText}>{t("activities.loading")}</Text>
-        <Text style={styles.loadingSubtext}>{t("activities.pleaseWait")}</Text>
+        <Text style={styles.loadingText}>{getLoadingMessage()}</Text>
+        <Text style={styles.loadingSubtext}>{getSubtextMessage()}</Text>
       </View>
     </SafeAreaView>
   );

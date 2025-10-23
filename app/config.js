@@ -5,8 +5,10 @@ const ENV_HOST = process.env.EXPO_PUBLIC_API_HOST;
 const ENV_PORT = process.env.EXPO_PUBLIC_API_PORT;
 const ENV_TIMEOUT = process.env.EXPO_PUBLIC_API_TIMEOUT;
 
-const LOCAL_IP = ENV_HOST || "10.89.81.194";
-const PORT = ENV_PORT || "5002";
+// Use your computer's IP address for phone connectivity during development
+// Your computer's IP: 192.168.0.193
+const LOCAL_IP = ENV_HOST || "192.168.0.193";
+const PORT = ENV_PORT || "5002";  // Voice Companion backend runs on port 5002
 
 export const API_CONFIG = {
   BASE_URL: __DEV__

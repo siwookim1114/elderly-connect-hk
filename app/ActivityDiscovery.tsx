@@ -1,5 +1,6 @@
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { Picker } from "@react-native-picker/picker";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert,
@@ -13,8 +14,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import ActivityResults from "./ActivityResults";
 import LoadingAnimation from "./LoadingAnimation";
 
-// Import your JSON data
-import activitiesData from "../elderly_activities_genai.json";
+// Import the activities API service
+import activitiesApi, { Activity, MTR_STATIONS_BY_DISTRICT, UserLocation } from "./services/activitiesApi";
 
 const DISTRICTS = [
   "Central & Western",
@@ -51,12 +52,23 @@ const ACTIVITY_TYPES = [
 export default function ActivityDiscoveryScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const params = useLocalSearchParams();
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
   const [selectedActivityType, setSelectedActivityType] =
     useState<string>("All Types");
+  const [selectedMtrStation, setSelectedMtrStation] = useState<string>("");
+  const [preSelectedMtrStation, setPreSelectedMtrStation] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const [filteredActivities, setFilteredActivities] = useState<any[]>([]);
+  const [filteredActivities, setFilteredActivities] = useState<Activity[]>([]);
+  const [useGenAI] = useState(true); // AI is now always enabled
+  const [userLocation, setUserLocation] = useState<UserLocation | undefined>(undefined);
+  const [locationStatus, setLocationStatus] = useState<string>(""); // For UI feedback
+
+  // Get MTR stations for the selected district
+  const getMtrStationsForDistrict = (district: string) => {
+    return MTR_STATIONS_BY_DISTRICT[district as keyof typeof MTR_STATIONS_BY_DISTRICT] || [];
+  };
 
   const handleSearch = async () => {
     if (!selectedDistrict) {
@@ -67,60 +79,89 @@ export default function ActivityDiscoveryScreen() {
     // Show loading animation
     setIsLoading(true);
     setShowResults(false);
+    setLocationStatus(t("activities.detectingLocation"));
 
-    // Filter activities locally (this will be replaced by API call)
-    const filtered = activitiesData.activities.filter((activity: any) => {
-      const districtMatch = activity.district === selectedDistrict;
-      const typeMatch =
-        selectedActivityType === "All Types" ||
-        activity.category === selectedActivityType;
-      return districtMatch && typeMatch;
-    });
-
-    // ============================================================
-    // TODO: REPLACE WITH GENAI API CALL
-    // ============================================================
-    // Uncomment when API is ready:
-    /*
     try {
-      const response = await fetch('YOUR_GENAI_API_URL', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          district: selectedDistrict,
-          activityType: selectedActivityType,
-        }),
-      });
+      // Get user's current location (fallback method)
+      const location = await activitiesApi.getCurrentLocation();
+      setUserLocation(location || undefined);
       
-      const data = await response.json();
-      setFilteredActivities(data.activities);
-    } catch (error) {
-      console.error('Error fetching activities:', error);
-      Alert.alert(t('activities.error'), t('activities.fetchError'));
-      setFilteredActivities(filtered);
-    }
-    */
-    // ============================================================
+      if (location) {
+        setLocationStatus(t("activities.locationDetected"));
+      } else {
+        setLocationStatus(t("activities.locationFailed"));
+      }
 
-    // Simulate API delay (2 seconds for animation)
-    setTimeout(() => {
-      setFilteredActivities(filtered);
-      setIsLoading(false);
-      setShowResults(true);
-    }, 2000);
+      // Add a small delay to show location detection status
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Determine the start MTR station
+      let startMtrStation = selectedMtrStation;
+      
+      // If no station selected but we have a location, find nearest station
+      if (!startMtrStation && location) {
+        // In a real implementation, we would call an API to find the nearest station
+        // For now, we'll just show a message
+        setLocationStatus(t("activities.pleaseSelectMtrStation"));
+      }
+
+      // Update status to show we're getting recommendations
+      setLocationStatus(t("activities.gettingRecommendations"));
+
+      // AI recommendations are now enabled by default
+      const response = await activitiesApi.recommendActivities({
+        district: selectedDistrict,
+        activityType: selectedActivityType,
+        userLocation: location || undefined,
+        startMtrStation: startMtrStation || undefined,
+        userPreferences: {
+          // In a real app, we would collect more user preferences
+          age: "65+",
+          interests: "social, health, community",
+        },
+      });
+      setFilteredActivities(response.activities);
+      
+      // Update status to show we're preparing results
+      setLocationStatus(t("activities.preparingResults"));
+    } catch (error) {
+      console.error("Error fetching activities:", error);
+      Alert.alert(t("activities.error"), t("activities.fetchError"));
+      
+      // Fallback to local filtering if API fails
+      // Note: In a real implementation, you would import the JSON data
+      // For now, we'll just show an empty array
+      setFilteredActivities([]);
+    }
+
+    // Hide loading animation
+    setIsLoading(false);
+    setShowResults(true);
   };
 
   const handleReset = () => {
     setSelectedDistrict("");
     setSelectedActivityType("All Types");
+    setSelectedMtrStation("");
     setShowResults(false);
     setFilteredActivities([]);
+    setUserLocation(undefined);
+    setLocationStatus("");
   };
 
+  // Effect to handle pre-selected MTR station from route params
+  useEffect(() => {
+    if (params.startMtrStation) {
+      const startStation = Array.isArray(params.startMtrStation) 
+        ? params.startMtrStation[0] 
+        : params.startMtrStation;
+      setPreSelectedMtrStation(startStation);
+      setSelectedMtrStation(startStation);
+    }
+  }, [params.startMtrStation]);
+
   if (isLoading) {
-    return <LoadingAnimation />;
+    return <LoadingAnimation status={locationStatus} />;
   }
 
   if (showResults) {
@@ -129,12 +170,13 @@ export default function ActivityDiscoveryScreen() {
         activities={filteredActivities}
         district={selectedDistrict}
         onBack={handleReset}
+        startMtrStation={preSelectedMtrStation || selectedMtrStation || undefined}
       />
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header with Mingle Branding */}
         <View style={styles.headerSection}>
@@ -181,6 +223,41 @@ export default function ActivityDiscoveryScreen() {
           </View>
         </View>
 
+        {/* MTR Station Selection - Only shown if not pre-selected */}
+        {selectedDistrict && !preSelectedMtrStation ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              🚇 {t("activities.selectMtrStation")}
+            </Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={selectedMtrStation}
+                style={styles.picker}
+                onValueChange={(itemValue: string) => setSelectedMtrStation(itemValue)}
+              >
+                <Picker.Item label={t("activities.chooseMtrStation")} value="" />
+                {getMtrStationsForDistrict(selectedDistrict).map((station) => (
+                  <Picker.Item key={station} label={station} value={station} />
+                ))}
+              </Picker>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Display pre-selected MTR station */}
+        {preSelectedMtrStation && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              🚇 {t("activities.startingFrom")}
+            </Text>
+            <View style={styles.preSelectedStationContainer}>
+              <Text style={styles.preSelectedStationText}>
+                {preSelectedMtrStation}
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Activity Type Filter */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
@@ -216,6 +293,20 @@ export default function ActivityDiscoveryScreen() {
           </ScrollView>
         </View>
 
+        {/* Location Status */}
+        {locationStatus ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              📍 {t("activities.locationStatus")}
+            </Text>
+            <View style={styles.locationStatusContainer}>
+              <Text style={styles.locationStatusText}>
+                {locationStatus}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
         {/* Selected Summary */}
         {selectedDistrict && (
           <View style={styles.summaryCard}>
@@ -239,6 +330,16 @@ export default function ActivityDiscoveryScreen() {
                 )}
               </Text>
             </Text>
+            {selectedMtrStation && (
+              <Text style={styles.summaryText}>
+                🚇 {t("activities.fromStation")}:{" "}
+                <Text style={styles.summaryBold}>{selectedMtrStation}</Text>
+              </Text>
+            )}
+            {/* Always show AI is being used since it's now default */}
+            <Text style={styles.summaryText}>
+              🤖 {t("activities.usingGenAI")}
+            </Text>
           </View>
         )}
 
@@ -246,10 +347,10 @@ export default function ActivityDiscoveryScreen() {
         <TouchableOpacity
           style={[
             styles.searchButton,
-            !selectedDistrict && styles.searchButtonDisabled,
+            (!selectedDistrict || (selectedDistrict && !selectedMtrStation && !preSelectedMtrStation)) ? styles.searchButtonDisabled : {},
           ]}
           onPress={handleSearch}
-          disabled={!selectedDistrict}
+          disabled={!!(!selectedDistrict || (selectedDistrict && !selectedMtrStation && !preSelectedMtrStation))}
         >
           <Text style={styles.searchButtonText}>
             🔍 {t("activities.searchButton")}
@@ -345,6 +446,21 @@ const styles = StyleSheet.create({
   districtButtonTextActive: {
     color: "#FFFFFF",
   },
+  pickerContainer: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  picker: {
+    height: 50,
+    width: "100%",
+  },
   filterRow: {
     flexDirection: "row",
     gap: 10,
@@ -375,6 +491,71 @@ const styles = StyleSheet.create({
   filterChipTextActive: {
     color: "#FFFFFF",
     fontWeight: "700",
+  },
+  toggleContainer: {
+    backgroundColor: "#FFFFFF",
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  toggleButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  toggleButtonActive: {
+    backgroundColor: "#38A169",
+  },
+  toggleButtonInactive: {
+    backgroundColor: "#E2E8F0",
+  },
+  toggleButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  toggleButtonTextActive: {
+    color: "#FFFFFF",
+  },
+  toggleButtonTextInactive: {
+    color: "#4A5568",
+  },
+  toggleDescription: {
+    fontSize: 14,
+    color: "#718096",
+    lineHeight: 20,
+  },
+  locationStatusContainer: {
+    backgroundColor: "#EBF8FF",
+    padding: 15,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#BEE3F8",
+  },
+  locationStatusText: {
+    fontSize: 14,
+    color: "#2D3748",
+    textAlign: "center",
+  },
+  preSelectedStationContainer: {
+    backgroundColor: "#E6FFFA",
+    padding: 15,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#81E6D9",
+    alignItems: "center",
+  },
+  preSelectedStationText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#234E52",
   },
   summaryCard: {
     marginHorizontal: 20,

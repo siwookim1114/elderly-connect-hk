@@ -3,9 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 // API Configuration
-// Prefer environment variable (Expo) and fallback to localhost for dev
+// Prefer environment variable (Expo) and fallback to computer's IP for dev
+// When running on phone, use computer's IP address: 192.168.0.193
 const DEFAULT_API_BASE_URL =
-  process.env.EXPO_PUBLIC_MEMORY_GARDEN_API_URL || 'http://localhost:8000';
+  process.env.EXPO_PUBLIC_MEMORY_GARDEN_API_URL || 'http://192.168.0.193:8002';
 const SERVER_URL_KEY = '@server_url';
 
 // Data models matching FastAPI backend
@@ -146,6 +147,30 @@ class MemoryGardenApiService {
     await this.ensureInitialized();
     const response = await axios.get(`${this.baseURL}/stories`);
     return response.data;
+  }
+
+  // Get all available images from all stories
+  async getAllImages(): Promise<Array<{id: string, storyId: string, url: string, date: string}>> {
+    try {
+      const stories = await this.getAllStories();
+      const images: Array<{id: string, storyId: string, url: string, date: string}> = [];
+      
+      stories.forEach(story => {
+        story.photos.forEach(photo => {
+          images.push({
+            id: photo.id,
+            storyId: story.id,
+            url: this.getPhotoUrl(story.id, photo.id),
+            date: story.date
+          });
+        });
+      });
+      
+      return images;
+    } catch (error) {
+      console.error('Error fetching all images:', error);
+      return [];
+    }
   }
 
   // Get specific story by ID

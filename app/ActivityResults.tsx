@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   FlatList,
@@ -8,26 +8,39 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import ActivityDetailModal from "./ActivityDetailModal";
+import { Activity } from "./services/activitiesApi";
 
 interface ActivityResultsProps {
-  activities: any[];
+  activities: Activity[];
   district: string;
   onBack: () => void;
+  useGenAI?: boolean; // Add this new prop
+  startMtrStation?: string; // Add this prop to pass the selected MTR station
 }
 
 export default function ActivityResults({
   activities,
   district,
   onBack,
+  useGenAI = true, // Default to true since AI is now always enabled
+  startMtrStation, // Default to undefined
 }: ActivityResultsProps) {
   const { t } = useTranslation();
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
-  const handleActivityPress = (activity: any) => {
-    // TODO: Navigate to activity detail page
-    console.log("Activity pressed:", activity);
+  const handleActivityPress = (activity: Activity) => {
+    setSelectedActivity(activity);
+    setModalVisible(true);
   };
 
-  const renderActivity = ({ item }: { item: any }) => (
+  const closeModal = () => {
+    setModalVisible(false);
+    setSelectedActivity(null);
+  };
+
+  const renderActivity = ({ item }: { item: Activity }) => (
     <TouchableOpacity
       style={styles.activityCard}
       onPress={() => handleActivityPress(item)}
@@ -68,6 +81,25 @@ export default function ActivityResults({
           <Text style={styles.icon}>💰</Text>
           <Text style={styles.infoText}>{item.fee}</Text>
         </View>
+
+        {/* MTR Directions Section */}
+        {item.mtr_directions && (
+          <View style={[styles.infoRow, styles.directionsRow]}>
+            <Text style={styles.icon}>🚇</Text>
+            <View style={styles.directionsTextContainer}>
+              <Text style={styles.directionsTitle}>
+                {t("activities.mtrDirections")}
+              </Text>
+              <Text style={styles.directionsText}>
+                {/* Use the startMtrStation prop if available, otherwise use the activity's start station */}
+                {startMtrStation || item.mtr_directions.start_station} → {item.mtr_directions.end_station}
+              </Text>
+              <Text style={styles.directionsDetails}>
+                {t("activities.estimatedTime")}: {item.mtr_directions.estimated_time}
+              </Text>
+            </View>
+          </View>
+        )}
       </View>
 
       <View style={styles.cardFooter}>
@@ -79,7 +111,7 @@ export default function ActivityResults({
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
@@ -90,6 +122,11 @@ export default function ActivityResults({
           {t("activities.activitiesIn")}{" "}
           {t(`districts.${district.replace(/\s+/g, "_").replace(/&/g, "and")}`)}
         </Text>
+
+        {/* Always show AI badge since AI recommendations are now default */}
+        <View style={styles.aiBadge}>
+          <Text style={styles.aiBadgeText}>🤖 {t("activities.aiRecommended")}</Text>
+        </View>
 
         <View style={styles.resultCountContainer}>
           <Text style={styles.resultCount}>
@@ -121,6 +158,14 @@ export default function ActivityResults({
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      {/* Activity Detail Modal */}
+      <ActivityDetailModal
+        visible={modalVisible}
+        activity={selectedActivity}
+        onClose={closeModal}
+        startMtrStation={startMtrStation || null}
+      />
     </SafeAreaView>
   );
 }
@@ -160,6 +205,19 @@ const styles = StyleSheet.create({
     color: "#333",
     textAlign: "center",
     marginBottom: 10,
+  },
+  aiBadge: {
+    backgroundColor: "#E3F2FD",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    alignSelf: "center",
+    marginBottom: 10,
+  },
+  aiBadgeText: {
+    color: "#1976D2",
+    fontSize: 14,
+    fontWeight: "600",
   },
   resultCountContainer: {
     backgroundColor: "#E3F2FD",
@@ -211,8 +269,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   categoryBadgeText: {
-    color: "#2196F3",
     fontSize: 12,
+    color: "#1976D2",
     fontWeight: "600",
   },
   cardBody: {
@@ -221,22 +279,48 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   icon: {
     fontSize: 16,
     marginRight: 8,
     width: 20,
+    textAlign: "center",
   },
   infoText: {
     flex: 1,
     fontSize: 14,
     color: "#666",
   },
+  directionsRow: {
+    backgroundColor: "#F5F5F5",
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  directionsTextContainer: {
+    flex: 1,
+  },
+  directionsTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 2,
+  },
+  directionsText: {
+    fontSize: 14,
+    color: "#1976D2",
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  directionsDetails: {
+    fontSize: 12,
+    color: "#666",
+  },
   cardFooter: {
     borderTopWidth: 1,
-    borderTopColor: "#F0F0F0",
-    paddingTop: 12,
+    borderTopColor: "#EEE",
+    paddingTop: 10,
   },
   viewDetailsText: {
     fontSize: 14,
@@ -251,14 +335,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyEmoji: {
-    fontSize: 80,
+    fontSize: 64,
     marginBottom: 20,
   },
   emptyTitle: {
-    fontSize: 24,
-    fontWeight: "700",
+    fontSize: 20,
+    fontWeight: "bold",
     color: "#333",
-    marginBottom: 12,
+    marginBottom: 10,
     textAlign: "center",
   },
   emptySubtitle: {
@@ -269,9 +353,9 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     backgroundColor: "#007AFF",
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 20,
   },
   retryButtonText: {
     color: "#FFF",
@@ -279,4 +363,3 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
-
