@@ -11,6 +11,92 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import ActivityDetailModal from "./ActivityDetailModal";
 import { Activity } from "./services/activitiesApi";
 
+// Create a mapping from English station names to translation keys
+const getStationTranslationKey = (stationName: string): string => {
+  const stationKeyMap: { [key: string]: string } = {
+    "Central": "mtrStations.central",
+    "Admiralty": "mtrStations.admiralty",
+    "Sheung Wan": "mtrStations.sheung_wan",
+    "Sai Ying Pun": "mtrStations.sai_ying_pun",
+    "Wan Chai": "mtrStations.wan_chai",
+    "Causeway Bay": "mtrStations.causeway_bay",
+    "Tin Hau": "mtrStations.tin_hau",
+    "Fortress Hill": "mtrStations.fortress_hill",
+    "North Point": "mtrStations.north_point",
+    "Quarry Bay": "mtrStations.quarry_bay",
+    "Tai Koo": "mtrStations.tai_koo",
+    "Sai Wan Ho": "mtrStations.sai_wan_ho",
+    "Shau Kei Wan": "mtrStations.shau_kei_wan",
+    "Heng Fa Chuen": "mtrStations.heng_fa_chuen",
+    "Chai Wan": "mtrStations.chai_wan",
+    "Siu Sai Wan": "mtrStations.siu_sai_wan",
+    "Wong Chuk Hang": "mtrStations.wong_chuk_hang",
+    "Ocean Park": "mtrStations.ocean_park",
+    "Lei Tung": "mtrStations.lei_tung",
+    "Mong Kok": "mtrStations.mong_kok",
+    "Prince Edward": "mtrStations.prince_edward",
+    "Tsim Sha Tsui": "mtrStations.tsim_sha_tsui",
+    "Jordan": "mtrStations.jordan",
+    "Yau Ma Tei": "mtrStations.yau_ma_tei",
+    "Sham Shui Po": "mtrStations.sham_shui_po",
+    "Cheung Sha Wan": "mtrStations.cheung_sha_wan",
+    "Lai Chi Kok": "mtrStations.lai_chi_kok",
+    "Mei Foo": "mtrStations.mei_foo",
+    "Lai King": "mtrStations.lai_king",
+    "Kowloon Tong": "mtrStations.kowloon_tong",
+    "Shek Kip Mei": "mtrStations.shek_kip_mei",
+    "Kowloon City": "mtrStations.kowloon_city",
+    "Wong Tai Sin": "mtrStations.wong_tai_sin",
+    "Diamond Hill": "mtrStations.diamond_hill",
+    "Choi Hung": "mtrStations.choi_hung",
+    "Kowloon Bay": "mtrStations.kowloon_bay",
+    "Kwun Tong": "mtrStations.kwun_tong",
+    "Ngau Tau Kok": "mtrStations.ngau_tau_kok",
+    "Lam Tin": "mtrStations.lam_tin",
+    "Yau Tong": "mtrStations.yau_tong",
+    "Tiu Keng Leng": "mtrStations.tiu_keng_leng",
+    "Tseung Kwan O": "mtrStations.tseung_kwan_o",
+    "Kwai Fong": "mtrStations.kwai_fong",
+    "Kwai Hing": "mtrStations.kwai_hing",
+    "Tai Wo Hau": "mtrStations.tai_wo_hau",
+    "Tsuen Wan West": "mtrStations.tsuen_wan_west",
+    "Tsuen Wan": "mtrStations.tsuen_wan",
+    "Tuen Mun": "mtrStations.tuen_mun",
+    "Siu Hong": "mtrStations.siu_hong",
+    "Tin Shui Wai": "mtrStations.tin_shui_wai",
+    "Long Ping": "mtrStations.long_ping",
+    "Yuen Long": "mtrStations.yuen_long",
+    "Tai Wo": "mtrStations.tai_wo",
+    "Fanling": "mtrStations.fanling",
+    "Sheung Shui": "mtrStations.sheung_shui",
+    "Tai Po Market": "mtrStations.tai_po_market",
+    "Tai Po": "mtrStations.tai_po",
+    "Fu Heng": "mtrStations.fu_heng",
+    "Wan Tau Kok Lai": "mtrStations.wan_tau_kok_lai",
+    "Sha Tin": "mtrStations.sha_tin",
+    "City One": "mtrStations.city_one",
+    "Shek Mun": "mtrStations.shek_mun",
+    "Tai Shui Hang": "mtrStations.tai_shui_hang",
+    "Heng On": "mtrStations.heng_on",
+    "Ma On Shan": "mtrStations.ma_on_shan",
+    "Wu Kai Sha": "mtrStations.wu_kai_sha",
+    "Mosque Junction": "mtrStations.mosque_junction",
+    "Che Kung Temple": "mtrStations.che_kung_temple",
+    "Tai Wai": "mtrStations.tai_wai",
+    "Shatin Wai": "mtrStations.shatin_wai",
+    "Fo Tan": "mtrStations.fo_tan",
+    "Racecourse": "mtrStations.racecourse",
+    "University": "mtrStations.university",
+    "Po Lam": "mtrStations.po_lam",
+    "Hang Hau": "mtrStations.hang_hau",
+    "Hong Kong": "mtrStations.hong_kong",
+    "Kennedy Town": "mtrStations.kennedy_town",
+    "HKU": "mtrStations.hku"
+  };
+  
+  return stationKeyMap[stationName] || stationName;
+};
+
 interface ActivityResultsProps {
   activities: Activity[];
   district: string;
@@ -92,7 +178,7 @@ export default function ActivityResults({
               </Text>
               <Text style={styles.directionsText}>
                 {/* Use the startMtrStation prop if available, otherwise use the activity's start station */}
-                {startMtrStation || item.mtr_directions.start_station} → {item.mtr_directions.end_station}
+                {t(getStationTranslationKey(startMtrStation || item.mtr_directions.start_station))} → {t(getStationTranslationKey(item.mtr_directions.end_station))}
               </Text>
               <Text style={styles.directionsDetails}>
                 {t("activities.estimatedTime")}: {item.mtr_directions.estimated_time}
