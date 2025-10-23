@@ -230,13 +230,13 @@ export default function MemoryDetail() {
       <SafeAreaView style={styles.container}>
         <Stack.Screen 
           options={{
-            title: "Memory Detail",
+            title: t("memoryGarden.title"),
             headerTitleAlign: "center",
           }}
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#DD6B20" />
-          <Text style={styles.loadingText}>Loading memory...</Text>
+          <Text style={styles.loadingText}>{t('memoryGarden.loadingMemory')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -247,21 +247,21 @@ export default function MemoryDetail() {
       <SafeAreaView style={styles.container}>
         <Stack.Screen 
           options={{
-            title: "Memory Detail",
+            title: t("memoryGarden.title"),
             headerTitleAlign: "center",
           }}
         />
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={80} color="#E53E3E" />
-          <Text style={styles.errorTitle}>Memory Not Found</Text>
+          <Text style={styles.errorTitle}>{t('memoryGarden.memoryNotFound')}</Text>
           <Text style={styles.errorSubtitle}>
-            This memory could not be found or may have been deleted.
+            {t('memoryGarden.memoryNotFoundSubtitle')}
           </Text>
           <TouchableOpacity 
             style={styles.backButton}
             onPress={() => router.back()}
           >
-            <Text style={styles.backButtonText}>Go Back</Text>
+            <Text style={styles.backButtonText}>{t('memoryGarden.goBack')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -272,7 +272,7 @@ export default function MemoryDetail() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen 
         options={{
-          title: "Memory Detail",
+          title: t("memoryGarden.title"),
           headerTitleAlign: "center",
         }}
       />
@@ -313,7 +313,7 @@ export default function MemoryDetail() {
             <View style={styles.storyContainer}>
               <View style={styles.storyHeader}>
                 <Ionicons name="book-outline" size={24} color="#DD6B20" />
-                <Text style={styles.storyTitle}>{isLocalMemory ? 'Memory Description' : 'AI-Generated Story'}</Text>
+                <Text style={styles.storyTitle}>{isLocalMemory ? t('memoryGarden.addMemory') : t('memoryGarden.aiGeneratedStory')}</Text>
               </View>
               <Text style={styles.storyText}>{story.story}</Text>
             </View>
@@ -323,10 +323,10 @@ export default function MemoryDetail() {
           <View style={styles.audioContainer}>
             <View style={styles.audioHeader}>
               <Ionicons name="volume-high-outline" size={24} color="#DD6B20" />
-              <Text style={styles.audioTitle}>Cantonese Audio</Text>
+              <Text style={styles.audioTitle}>{t('memoryGarden.cantoneseAudio')}</Text>
             </View>
             <Text style={styles.audioSubtitle}>
-              Listen to your story in Cantonese
+              {t('memoryGarden.listenInCantonese')}
             </Text>
             
             <TouchableOpacity 
@@ -344,7 +344,7 @@ export default function MemoryDetail() {
                 />
               )}
               <Text style={styles.audioButtonText}>
-                {audioLoading ? 'Loading...' : isPlaying ? 'Pause Audio' : 'Play in Cantonese'}
+                {audioLoading ? t('memoryGarden.loading') : isPlaying ? t('memoryGarden.pauseAudio') : t('memoryGarden.playInCantonese')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -355,7 +355,7 @@ export default function MemoryDetail() {
             onPress={deleteMemory}
           >
             <Ionicons name="trash-outline" size={20} color="#E53E3E" />
-            <Text style={styles.deleteButtonText}>Delete Memory</Text>
+            <Text style={styles.deleteButtonText}>{t('memoryGarden.deleteMemory')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

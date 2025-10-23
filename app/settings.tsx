@@ -3,16 +3,17 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
-  Alert,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  ActivityIndicator
+    ActivityIndicator,
+    Alert,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import memoryGardenApi from './services/memoryGardenApi';
 
@@ -21,6 +22,7 @@ const DEFAULT_SERVER_URL = 'http://localhost:8000';
 
 export default function Settings() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [serverUrl, setServerUrl] = useState(DEFAULT_SERVER_URL);
   const [tempUrl, setTempUrl] = useState(DEFAULT_SERVER_URL);
   const [testing, setTesting] = useState(false);
@@ -69,7 +71,7 @@ export default function Settings() {
     // Validate URL format
     const urlPattern = /^https?:\/\/.+/;
     if (!urlPattern.test(tempUrl.trim())) {
-      Alert.alert('Invalid URL', 'Please enter a valid URL starting with http:// or https://');
+      Alert.alert(t('settings.invalidUrl'), t('settings.invalidUrlMessage'));
       return;
     }
 
@@ -87,8 +89,8 @@ export default function Settings() {
         memoryGardenApi['baseURL'] = cleanUrl;
         
         Alert.alert(
-          'Success',
-          'Server URL saved and connection successful!',
+          t('settings.success'),
+          t('settings.successMessage'),
           [
             {
               text: 'OK',
@@ -98,28 +100,28 @@ export default function Settings() {
         );
       } catch (error) {
         console.error('Error saving server URL:', error);
-        Alert.alert('Error', 'Failed to save server URL');
+        Alert.alert(t('settings.errorSaving'), t('settings.errorSavingMessage'));
       }
     } else {
       Alert.alert(
-        'Connection Failed',
-        'Could not connect to the server. Do you still want to save this URL?',
+        t('settings.connectionFailed'),
+        t('settings.connectionFailedMessage'),
         [
           {
-            text: 'Cancel',
+            text: t('common.cancel'),
             style: 'cancel'
           },
           {
-            text: 'Save Anyway',
+            text: t('settings.saveAnyway'),
             onPress: async () => {
               try {
                 await AsyncStorage.setItem(SERVER_URL_KEY, cleanUrl);
                 setServerUrl(cleanUrl);
                 memoryGardenApi['baseURL'] = cleanUrl;
-                Alert.alert('Saved', 'Server URL saved (connection not verified)');
+                Alert.alert(t('settings.saved'), t('settings.savedMessage'));
                 router.back();
               } catch (error) {
-                Alert.alert('Error', 'Failed to save server URL');
+                Alert.alert(t('settings.errorSaving'), t('settings.errorSavingMessage'));
               }
             }
           }
@@ -130,15 +132,15 @@ export default function Settings() {
 
   const resetToDefault = () => {
     Alert.alert(
-      'Reset to Default',
-      'Reset server URL to default (localhost:8000)?',
+      t('settings.resetToDefaultTitle'),
+      t('settings.resetToDefaultMessage'),
       [
         {
-          text: 'Cancel',
+          text: t('common.cancel'),
           style: 'cancel'
         },
         {
-          text: 'Reset',
+          text: t('settings.reset'),
           onPress: async () => {
             setTempUrl(DEFAULT_SERVER_URL);
             setServerUrl(DEFAULT_SERVER_URL);
@@ -161,9 +163,9 @@ export default function Settings() {
 
   const getConnectionStatusText = () => {
     switch (connectionStatus) {
-      case 'connected': return 'Connected';
-      case 'disconnected': return 'Not Connected';
-      default: return 'Unknown';
+      case 'connected': return t('settings.connected');
+      case 'disconnected': return t('settings.notConnected');
+      default: return t('settings.unknown');
     }
   };
 
@@ -171,7 +173,7 @@ export default function Settings() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen 
         options={{
-          title: "Settings",
+          title: t("settings.title"),
           headerTitleAlign: "center",
         }}
       />
@@ -180,33 +182,33 @@ export default function Settings() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="server-outline" size={24} color="#DD6B20" />
-            <Text style={styles.sectionTitle}>Memory Garden Server</Text>
+            <Text style={styles.sectionTitle}>{t('settings.memoryGardenServer')}</Text>
           </View>
           
           <Text style={styles.description}>
-            Configure the server URL for Memory Garden features (AI story generation and Cantonese audio).
+            {t('settings.configureServerUrl')}
           </Text>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Server URL</Text>
+            <Text style={styles.label}>{t('settings.serverUrl')}</Text>
             <TextInput
               style={styles.input}
               value={tempUrl}
               onChangeText={setTempUrl}
-              placeholder="http://your-server-ip:8000"
+              placeholder={t('settings.serverUrlPlaceholder')}
               placeholderTextColor="#A0AEC0"
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
             />
             <Text style={styles.hint}>
-              Example: http://192.168.1.100:8000 or http://10.0.0.5:8000
+              {t('settings.serverUrlHint')}
             </Text>
           </View>
 
           <View style={styles.statusContainer}>
             <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>Status:</Text>
+              <Text style={styles.statusLabel}>{t('settings.status')}:</Text>
               <View style={[styles.statusBadge, { backgroundColor: getConnectionStatusColor() + '20' }]}>
                 <View style={[styles.statusDot, { backgroundColor: getConnectionStatusColor() }]} />
                 <Text style={[styles.statusText, { color: getConnectionStatusColor() }]}>
@@ -226,7 +228,7 @@ export default function Settings() {
                 <Ionicons name="wifi-outline" size={20} color="#DD6B20" />
               )}
               <Text style={styles.testButtonText}>
-                {testing ? 'Testing...' : 'Test Connection'}
+                {testing ? t('settings.testing') : t('settings.testConnection')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -238,7 +240,7 @@ export default function Settings() {
               disabled={testing}
             >
               <Ionicons name="checkmark-circle-outline" size={20} color="white" />
-              <Text style={styles.saveButtonText}>Save Settings</Text>
+              <Text style={styles.saveButtonText}>{t('settings.saveSettings')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -247,7 +249,7 @@ export default function Settings() {
               disabled={testing}
             >
               <Ionicons name="refresh-outline" size={20} color="#718096" />
-              <Text style={styles.resetButtonText}>Reset to Default</Text>
+              <Text style={styles.resetButtonText}>{t('settings.resetToDefault')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -255,13 +257,13 @@ export default function Settings() {
         <View style={styles.infoSection}>
           <View style={styles.infoHeader}>
             <Ionicons name="information-circle-outline" size={20} color="#4299E1" />
-            <Text style={styles.infoTitle}>How to find your server IP:</Text>
+            <Text style={styles.infoTitle}>{t('settings.howToFindIp')}:</Text>
           </View>
           <Text style={styles.infoText}>
-            • On Windows: Open Command Prompt and type "ipconfig"{'\n'}
-            • On Mac/Linux: Open Terminal and type "ifconfig"{'\n'}
-            • Look for your local IP address (usually starts with 192.168 or 10.0){'\n'}
-            • Make sure your device and server are on the same network
+            {`• ${t('settings.windowsIp')}\n`}
+            {`• ${t('settings.macLinuxIp')}\n`}
+            {`• ${t('settings.lookForIp')}\n`}
+            {`• ${t('settings.sameNetwork')}`}
           </Text>
         </View>
       </ScrollView>

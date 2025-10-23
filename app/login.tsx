@@ -3,32 +3,32 @@ import moment from "moment-timezone";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Alert,
-  Dimensions,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Dimensions,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import Animated, {
-  BounceIn,
-  FadeIn,
-  FadeInDown,
-  FadeInLeft,
-  FadeInRight,
-  FadeInUp,
-  SlideInLeft,
-  SlideInRight,
-  useAnimatedStyle,
-  useSharedValue,
-  withSequence,
-  withSpring,
-  withTiming,
-  ZoomIn
+    BounceIn,
+    FadeIn,
+    FadeInDown,
+    FadeInLeft,
+    FadeInRight,
+    FadeInUp,
+    SlideInLeft,
+    SlideInRight,
+    useAnimatedStyle,
+    useSharedValue,
+    withSequence,
+    withSpring,
+    withTiming,
+    ZoomIn
 } from "react-native-reanimated";
 
 const { width, height } = Dimensions.get("window");
@@ -96,10 +96,10 @@ export default function LoginScreen() {
         withSpring(1, { damping: 3 })
       );
       Alert.alert(
-        i18n.language === "en" ? "Invalid Phone" : "電話號碼無效",
+        i18n.language === "en" ? t("common.error") : t("common.error"),
         i18n.language === "en"
-          ? "Please enter a valid Hong Kong phone number"
-          : "請輸入有效的香港電話號碼"
+          ? t("login.enterPhone")
+          : t("login.enterPhone")
       );
       return;
     }
@@ -121,10 +121,10 @@ export default function LoginScreen() {
         withSpring(1, { damping: 3 })
       );
       Alert.alert(
-        i18n.language === "en" ? "Invalid OTP" : "驗證碼無效",
+        i18n.language === "en" ? t("common.error") : t("common.error"),
         i18n.language === "en"
-          ? "Please enter 6-digit OTP"
-          : "請輸入6位數驗證碼"
+          ? t("login.enterCode")
+          : t("login.enterCode")
       );
       return;
     }
@@ -137,10 +137,10 @@ export default function LoginScreen() {
       buttonScale.value = withSpring(1);
 
       Alert.alert(
-        i18n.language === "en" ? "Success!" : "成功！",
+        i18n.language === "en" ? t("common.success") : t("common.success"),
         i18n.language === "en"
-          ? "Login successful! Welcome to Mingle."
-          : "登入成功！歡迎來到 Mingle。",
+          ? t("login.terms")
+          : t("login.terms"),
         [
           {
             text: "OK",
@@ -260,7 +260,7 @@ export default function LoginScreen() {
               style={styles.loginTitle}
               entering={FadeIn.duration(600).delay(900)}
             >
-              {isOtpSent ? t("login.enterVerification") : "Welcome Back"}
+              {isOtpSent ? t("login.enterVerification") : t("login.title")}
             </AnimatedText>
 
             {!isOtpSent ? (
@@ -269,14 +269,14 @@ export default function LoginScreen() {
                 style={styles.inputGroup}
                 entering={SlideInLeft.duration(500).delay(1000)}
               >
-                <Text style={styles.inputLabel}>Phone Number</Text>
+                <Text style={styles.inputLabel}>{t("login.phoneNumber")}</Text>
                 <View style={styles.phoneInputContainer}>
                   <View style={styles.countryCode}>
                     <Text style={styles.countryCodeText}>+852</Text>
                   </View>
                   <TextInput
                     style={styles.phoneInput}
-                    placeholder="Enter your phone number"
+                    placeholder={t("login.enterPhone")}
                     placeholderTextColor="#999999"
                     value={phoneNumber}
                     onChangeText={setPhoneNumber}
@@ -285,7 +285,7 @@ export default function LoginScreen() {
                   />
                 </View>
                 <Text style={styles.helperText}>
-                  We'll send a verification code to your phone
+                  {t("login.sendCode")}
                 </Text>
               </AnimatedView>
             ) : (
@@ -295,7 +295,7 @@ export default function LoginScreen() {
                 entering={SlideInRight.duration(500).delay(1000)}
               >
                 <Text style={styles.inputLabel}>
-                  Verification Code
+                  {t("login.verificationCode")}
                 </Text>
                 <TextInput
                   style={styles.otpInput}
@@ -308,14 +308,14 @@ export default function LoginScreen() {
                   textAlign="center"
                 />
                 <Text style={styles.helperText}>
-                  Code sent to {phoneNumber}
+                  {t("login.codeSent", { phone: phoneNumber })}
                 </Text>
                 <TouchableOpacity
                   onPress={handleEditPhone}
                   style={styles.editPhone}
                 >
                   <Text style={styles.editPhoneText}>
-                    Edit phone number
+                    {t("login.editPhone")}
                   </Text>
                 </TouchableOpacity>
               </AnimatedView>
@@ -334,10 +334,10 @@ export default function LoginScreen() {
             >
               <Text style={styles.actionButtonText}>
                 {isLoading
-                  ? "Sending..."
+                  ? t("login.loading")
                   : isOtpSent
-                  ? "Verify Code"
-                  : "Send Code"}
+                  ? t("login.verify")
+                  : t("login.send")}
               </Text>
             </AnimatedTouchableOpacity>
 
@@ -361,8 +361,8 @@ export default function LoginScreen() {
         >
           <Text style={styles.footerText}>
             {i18n.language === "en" 
-              ? "By continuing, you agree to our Terms and Privacy Policy"
-              : "繼續即表示您同意我們的條款和隱私政策"}
+              ? t("login.terms")
+              : t("login.terms")}
           </Text>
         </AnimatedView>
       </View>

@@ -1,9 +1,12 @@
 import { Stack } from "expo-router";
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Platform, StatusBar } from "react-native";
 import "./i18n";
 
 export default function RootLayout() {
+  const { t } = useTranslation();
+  
   // Set status bar style
   useEffect(() => {
     StatusBar.setBarStyle('dark-content');
@@ -92,7 +95,7 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           // Mingle brand header styling
-          headerBackTitle: "Back",
+          headerBackTitle: t("common.back"),
           headerTintColor: mingleColors.primary[600],
           headerTitleStyle: headerTitleStyle,
           headerStyle: {
@@ -163,7 +166,7 @@ export default function RootLayout() {
           name="ActivityDiscovery"
           options={{
             headerShown: true,
-            title: "Activity Discovery",
+            title: t("activities.title"),
             headerTitleAlign: "center",
             headerShadowVisible: true,
             headerBackButtonDisplayMode: "minimal",
@@ -180,7 +183,7 @@ export default function RootLayout() {
           name="voice-companion"
           options={{
             headerShown: true,
-            title: "Voice Companion",
+            title: t("voice.title"),
             headerTitleAlign: "center",
             headerShadowVisible: true,
             headerBackButtonDisplayMode: "minimal",
@@ -197,7 +200,7 @@ export default function RootLayout() {
           name="memory-garden"
           options={{
             headerShown: true,
-            title: "Memory Garden",
+            title: t("memoryGarden.title"),
             headerTitleAlign: "center",
             headerShadowVisible: true,
             headerBackButtonDisplayMode: "minimal",
@@ -215,7 +218,7 @@ export default function RootLayout() {
           name="help-desk"
           options={{
             headerShown: true,
-            title: "Help Desk",
+            title: t("helpDesk.title"),
             headerTitleAlign: "center",
             headerShadowVisible: true,
             headerBackButtonDisplayMode: "minimal",
@@ -233,7 +236,7 @@ export default function RootLayout() {
           name="settings"
           options={{
             headerShown: true,
-            title: "Settings",
+            title: t("settings.title"),
             headerTitleAlign: "center",
             headerShadowVisible: true,
             headerBackButtonDisplayMode: "minimal",

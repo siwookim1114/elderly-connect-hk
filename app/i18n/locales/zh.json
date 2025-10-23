@@ -45,7 +45,9 @@
     "havenSubtitle": "與社區聯繫，參與有意義的活動",
     "tapToStart": "點擊開始",
     "getStarted": "開始使用",
-    "allFeaturesVisible": "所有功能一目了然 - 無需滾動"
+    "allFeaturesVisible": "所有功能一目了然 - 無需滾動",
+    "helpDesk": "幫助台",
+    "helpDeskSubtitle": "獲得協助同支援"
   },
   "activities": {
     "title": "尋找活動",
@@ -176,6 +178,47 @@
     "libraryPermissionDenied": "需要照片庫權限！",
     "error": "錯誤",
     "failedToLoad": "載入回憶詳情失敗",
-    "failedToPlayAudio": "播放音頻失敗"
+    "failedToPlayAudio": "播放音頻失敗",
+    "deleteMemory": "刪除回憶"
+  },
+  "helpDesk": {
+    "title": "幫助台",
+    "subtitle": "即將推出！",
+    "description": "此功能正在開發中。"
+  },
+  "settings": {
+    "title": "設定",
+    "memoryGardenServer": "憶園伺服器",
+    "configureServerUrl": "設定憶園功能的伺服器URL（AI故事生成同廣東話音頻）。",
+    "serverUrl": "伺服器URL",
+    "serverUrlPlaceholder": "http://your-server-ip:8000",
+    "serverUrlHint": "例如: http://192.168.1.100:8000 或 http://10.0.0.5:8000",
+    "status": "狀態",
+    "connected": "已連接",
+    "notConnected": "未連接",
+    "unknown": "未知",
+    "testConnection": "測試連接",
+    "testing": "測試中...",
+    "saveSettings": "儲存設定",
+    "resetToDefault": "重設為預設值",
+    "resetToDefaultTitle": "重設為預設值",
+    "resetToDefaultMessage": "重設伺服器URL為預設值 (localhost:8000)?",
+    "reset": "重設",
+    "invalidUrl": "無效URL",
+    "invalidUrlMessage": "請輸入以 http:// 或 https:// 開頭的有效URL",
+    "connectionFailed": "連接失敗",
+    "connectionFailedMessage": "無法連接到伺服器。您仍然想儲存此URL嗎？",
+    "saveAnyway": "仍然儲存",
+    "success": "成功",
+    "successMessage": "伺服器URL已儲存且連接成功！",
+    "saved": "已儲存",
+    "savedMessage": "伺服器URL已儲存（未驗證連接）",
+    "errorSaving": "錯誤",
+    "errorSavingMessage": "儲存伺服器URL失敗",
+    "howToFindIp": "如何找到您的伺服器IP:",
+    "windowsIp": "在Windows上: 開啟命令提示字元並輸入 \"ipconfig\"",
+    "macLinuxIp": "在Mac/Linux上: 開啟終端機並輸入 \"ifconfig\"",
+    "lookForIp": "尋找您的本地IP地址（通常以192.168或10.0開頭）",
+    "sameNetwork": "確保您的裝置和伺服器在同一網絡上"
   }
 }

@@ -14,7 +14,7 @@
     "phoneNumber": "PHONE NUMBER",
     "verificationCode": "VERIFICATION CODE",
     "enterPhone": "Enter your phone number",
-    "enterCode": "Enter verification code",
+    "sendCode": "Enter verification code",
     "codeSent": "Enter the code sent to +852 {{phone}}",
     "editPhone": "Edit phone number",
     "send": "SEND CODE",
@@ -41,7 +41,9 @@
     "CommunityCenter": "Community Center",
     "communitySubtitle": "Discover local activities",
     "Haven": "Activity Haven",
-    "havenSubtitle": "Discover local events"
+    "havenSubtitle": "Discover local events",
+    "helpDesk": "Help Desk",
+    "helpDeskSubtitle": "Get assistance and support"
   },
   "activities": {
     "title": "Find Activities",
@@ -172,6 +174,47 @@
     "libraryPermissionDenied": "Permission to access camera roll is required!",
     "error": "Error",
     "failedToLoad": "Failed to load memory details",
-    "failedToPlayAudio": "Failed to play audio"
+    "failedToPlayAudio": "Failed to play audio",
+    "deleteMemory": "Delete Memory"
+  },
+  "helpDesk": {
+    "title": "Help Desk",
+    "subtitle": "Coming Soon!",
+    "description": "This feature is under development."
+  },
+  "settings": {
+    "title": "Settings",
+    "memoryGardenServer": "Memory Garden Server",
+    "configureServerUrl": "Configure the server URL for Memory Garden features (AI story generation and Cantonese audio).",
+    "serverUrl": "Server URL",
+    "serverUrlPlaceholder": "http://your-server-ip:8000",
+    "serverUrlHint": "Example: http://192.168.1.100:8000 or http://10.0.0.5:8000",
+    "status": "Status",
+    "connected": "Connected",
+    "notConnected": "Not Connected",
+    "unknown": "Unknown",
+    "testConnection": "Test Connection",
+    "testing": "Testing...",
+    "saveSettings": "Save Settings",
+    "resetToDefault": "Reset to Default",
+    "resetToDefaultTitle": "Reset to Default",
+    "resetToDefaultMessage": "Reset server URL to default (localhost:8000)?",
+    "reset": "Reset",
+    "invalidUrl": "Invalid URL",
+    "invalidUrlMessage": "Please enter a valid URL starting with http:// or https://",
+    "connectionFailed": "Connection Failed",
+    "connectionFailedMessage": "Could not connect to the server. Do you still want to save this URL?",
+    "saveAnyway": "Save Anyway",
+    "success": "Success",
+    "successMessage": "Server URL saved and connection successful!",
+    "saved": "Saved",
+    "savedMessage": "Server URL saved (connection not verified)",
+    "errorSaving": "Error",
+    "errorSavingMessage": "Failed to save server URL",
+    "howToFindIp": "How to find your server IP:",
+    "windowsIp": "On Windows: Open Command Prompt and type \"ipconfig\"",
+    "macLinuxIp": "On Mac/Linux: Open Terminal and type \"ifconfig\"",
+    "lookForIp": "Look for your local IP address (usually starts with 192.168 or 10.0)",
+    "sameNetwork": "Make sure your device and server are on the same network"
   }
 }

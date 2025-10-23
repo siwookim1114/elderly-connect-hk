@@ -3,15 +3,15 @@ import moment from "moment-timezone";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Animated,
-  Dimensions,
-  Easing,
-  Image,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Dimensions,
+    Easing,
+    Image,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 const { width, height } = Dimensions.get("window");
@@ -178,8 +178,8 @@ export default function Index() {
         >
           <Text style={styles.welcomeText}>
             {i18n.language === "en" 
-              ? "Your gateway to meaningful connections and joyful moments"
-              : "開啟有意義的聯繫和歡樂時刻的大門"}
+              ? t("welcome.subtitle")
+              : t("welcome.subtitle")}
           </Text>
         </Animated.View>
 
@@ -197,7 +197,7 @@ export default function Index() {
           >
             <View style={styles.buttonBackground} />
             <Text style={styles.buttonText}>
-              {i18n.language === "en" ? "Get Started" : "開始使用"}
+              {i18n.language === "en" ? t("welcome.getStarted") : t("welcome.getStarted")}
             </Text>
             <View style={styles.buttonIcon}>
               <Text style={styles.buttonIconText}>→</Text>
@@ -216,9 +216,9 @@ export default function Index() {
         ]}
       >
         <Text style={styles.footerText}>
-          {i18n.language === "en" ? "Already have an account? " : "已有帳戶？ "}
+          {i18n.language === "en" ? t("welcome.alreadyHaveAccount") : t("welcome.alreadyHaveAccount")}
           <Text style={styles.loginLink} onPress={() => router.replace("/login")}>
-            {i18n.language === "en" ? "Sign In" : "立即登入"}
+            {i18n.language === "en" ? t("welcome.signIn") : t("welcome.signIn")}
           </Text>
         </Text>
       </Animated.View>

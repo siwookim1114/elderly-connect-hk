@@ -33,33 +33,39 @@ cp .env.example .env
 source backend_venv/bin/activate
 python backend/app.py
 ```
+### 4. Start the MongoDB
+```bash
+docker-compose up -d
+```
+
+### 3. Ollama
+```bash
+ollama serve &
+```
+### 3. Voice Bot
+```bash
+python3 app.py
+```
+### 3. Memory Garden
+```bash
+python3 start_memory_garden.py
+```
 
 ## API Keys Required
 
-### Azure Cognitive Services
-1. Go to [Azure Portal](https://portal.azure.com)
-2. Create a Speech Services resource
-3. Copy the API key and region
-
-### DeepSeek AI
-1. Go to [DeepSeek Platform](https://platform.deepseek.com)
-2. Sign up and get your API key
-
-## API Endpoints
-
-- **GET /health** - Health check and status
-- **POST /process-voice** - Process voice input and return AI response
-
-## Testing
-
 ```bash
-# Test health endpoint
-curl http://localhost:5002/health
+# Azure Speech Services Configuration
+AZURE_SPEECH_KEY=BVz8yTnhTdbfCcXmGO7TF3DXO1STRI1PUPvxrHHmgAEWzDpvOmgJJQQJ99BJACqBBLyXJ3w3AAAYACOGsKTT
+AZURE_SPEECH_REGION=southeastasia
+AZURE_SPEECH_ENDPOINT=
 
-# Test voice processing (requires audio data)
-curl -X POST http://localhost:5002/process-voice \
-  -H "Content-Type: application/json" \
-  -d '{"audio": "base64_audio_data", "language": "english"}'
+# DeepSeek/Ollama Configuration (for local LLM)
+DEEPSEEK_API_KEY=ollama
+DEEPSEEK_ENDPOINT=http://localhost:11434/v1/chat/completions
+DEEPSEEK_MODEL=llama3.1:latest
+
+# Flask Server Port (optional)
+PORT=5003
 ```
 
 ## Development

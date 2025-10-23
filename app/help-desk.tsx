@@ -1,15 +1,18 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HelpDeskScreen() {
+  const { t } = useTranslation();
+  
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Help Desk</Text>
-        <Text style={styles.subtitle}>Coming Soon!</Text>
+        <Text style={styles.title}>{t("helpDesk.title")}</Text>
+        <Text style={styles.subtitle}>{t("helpDesk.subtitle")}</Text>
         <Text style={styles.description}>
-          This feature is under development.
+          {t("helpDesk.description")}
         </Text>
       </View>
     </SafeAreaView>

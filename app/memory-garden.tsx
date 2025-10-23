@@ -2,18 +2,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-import { Stack, useRouter, useFocusEffect } from 'expo-router';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Platform } from 'react-native';
 import {
   ActivityIndicator,
-  Alert,
-  FlatList,
-  Image,
-  RefreshControl,
-  Modal,
-  SafeAreaView,
+  Alert, FlatList, Image, Modal, Platform, RefreshControl, SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -40,7 +34,9 @@ export default function MemoryGarden() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [apiConnected, setApiConnected] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showImagesModal, setShowImagesModal] = useState(false);
+  const [availableImages, setAvailableImages] = useState<Array<{id: string, storyId: string, url: string, date: string}>>([]);
+  const [imagesLoading, setImagesLoading] = useState(false);
 
   useEffect(() => {
     checkApiConnection();
@@ -62,6 +58,20 @@ export default function MemoryGarden() {
     } catch (error) {
       console.log('API not available, using local storage');
       setApiConnected(false);
+    }
+  };
+
+  const loadAvailableImages = async () => {
+    if (!apiConnected) return;
+    
+    try {
+      setImagesLoading(true);
+      const images = await memoryGardenApi.getAllImages();
+      setAvailableImages(images);
+    } catch (error) {
+      console.error('Error loading available images:', error);
+    } finally {
+      setImagesLoading(false);
     }
   };
 
@@ -117,7 +127,7 @@ export default function MemoryGarden() {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
     if (permissionResult.granted === false) {
-      Alert.alert('Permission required', 'Permission to access camera roll is required!');
+      Alert.alert(t('memoryGarden.permissionRequired'), t('memoryGarden.libraryPermissionDenied'));
       return;
     }
 
@@ -169,12 +179,12 @@ export default function MemoryGarden() {
           console.error('Upload failed, saving locally instead:', e);
           const newMemory: Memory = {
             id: Date.now().toString(),
-            title: `Memory ${memories.length + 1}`,
-            description: 'A precious moment captured',
+            title: `${t('memoryGarden.addMemory')} ${memories.length + 1}`,
+            description: t('memoryGarden.noMemoriesSubtitle'),
             imageUri: imageUri,
             date,
             category: 'General',
-            story: 'This is a beautiful memory that tells a story of joy and connection.'
+            story: t('memoryGarden.aiGeneratedStory')
           };
           const updatedMemories = [...memories, newMemory];
           await saveMemories(updatedMemories);
@@ -182,12 +192,12 @@ export default function MemoryGarden() {
       } else {
         const newMemory: Memory = {
           id: Date.now().toString(),
-          title: `Memory ${memories.length + 1}`,
-          description: 'A precious moment captured',
+          title: `${t('memoryGarden.addMemory')} ${memories.length + 1}`,
+          description: t('memoryGarden.noMemoriesSubtitle'),
           imageUri: imageUri,
           date,
           category: 'General',
-          story: 'This is a beautiful memory that tells a story of joy and connection.'
+          story: t('memoryGarden.aiGeneratedStory')
         };
         const updatedMemories = [...memories, newMemory];
         await saveMemories(updatedMemories);
@@ -199,7 +209,7 @@ export default function MemoryGarden() {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
     
     if (permissionResult.granted === false) {
-      Alert.alert('Permission required', 'Permission to access camera is required!');
+      Alert.alert(t('memoryGarden.permissionRequired'), t('memoryGarden.cameraPermissionDenied'));
       return;
     }
 
@@ -250,12 +260,12 @@ export default function MemoryGarden() {
           console.error('Upload failed, saving locally instead:', e);
           const newMemory: Memory = {
             id: Date.now().toString(),
-            title: `Photo ${memories.length + 1}`,
-            description: 'A moment captured with love',
+            title: `${t('memoryGarden.addMemory')} ${memories.length + 1}`,
+            description: t('memoryGarden.noMemoriesSubtitle'),
             imageUri: imageUri,
             date,
             category: 'Photo',
-            story: 'This photo captures a special moment in time, filled with warmth and memories.'
+            story: t('memoryGarden.aiGeneratedStory')
           };
           const updatedMemories = [...memories, newMemory];
           await saveMemories(updatedMemories);
@@ -263,12 +273,12 @@ export default function MemoryGarden() {
       } else {
         const newMemory: Memory = {
           id: Date.now().toString(),
-          title: `Photo ${memories.length + 1}`,
-          description: 'A moment captured with love',
+          title: `${t('memoryGarden.addMemory')} ${memories.length + 1}`,
+          description: t('memoryGarden.noMemoriesSubtitle'),
           imageUri: imageUri,
           date,
           category: 'Photo',
-          story: 'This photo captures a special moment in time, filled with warmth and memories.'
+          story: t('memoryGarden.aiGeneratedStory')
         };
         const updatedMemories = [...memories, newMemory];
         await saveMemories(updatedMemories);
@@ -276,13 +286,24 @@ export default function MemoryGarden() {
     }
   };
 
-  const showAddOptions = () => {
+  const showAddOptions = async () => {
     console.log('Add memory button pressed!');
-    setShowAddModal(true);
+    if (apiConnected) {
+      // Load available images from server
+      await loadAvailableImages();
+      setShowImagesModal(true);
+    } else {
+      // If not connected to API, show alert
+      Alert.alert(t('memoryGarden.error'), t('memoryGarden.failedToLoad'));
+    }
   };
 
   const closeAddModal = () => {
-    setShowAddModal(false);
+    // This function is no longer used but kept for compatibility
+  };
+
+  const closeImagesModal = () => {
+    setShowImagesModal(false);
   };
 
   const renderMemory = ({ item }: { item: Memory }) => (
@@ -301,18 +322,37 @@ export default function MemoryGarden() {
     </TouchableOpacity>
   );
 
+  const renderImageItem = ({ item }: { item: {id: string, storyId: string, url: string, date: string} }) => (
+    <TouchableOpacity 
+      style={styles.imageCard}
+      onPress={() => {
+        // Navigate to the story detail page for this image
+        closeImagesModal();
+        router.push(`/memory-detail/${item.storyId}`);
+      }}
+    >
+      <Image source={{ uri: item.url }} style={styles.imageThumbnail} />
+      <View style={styles.imageInfo}>
+        <Text style={styles.imageDate}>{item.date}</Text>
+        <Text style={styles.imageId} numberOfLines={1}>
+          Story: {item.storyId.substring(0, 8)}...
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <Stack.Screen 
           options={{
-            title: "Memory Garden",
+            title: t("memoryGarden.title"),
             headerTitleAlign: "center",
           }}
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#DD6B20" />
-          <Text style={styles.loadingText}>Loading your memories...</Text>
+          <Text style={styles.loadingText}>{t('memoryGarden.loadingMemories')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -322,7 +362,7 @@ export default function MemoryGarden() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen 
         options={{
-          title: "Memory Garden",
+          title: t("memoryGarden.title"),
           headerTitleAlign: "center",
         }}
       />
@@ -330,9 +370,9 @@ export default function MemoryGarden() {
       {memories.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="flower-outline" size={80} color="#DD6B20" />
-          <Text style={styles.emptyTitle}>No Memories Yet</Text>
+          <Text style={styles.emptyTitle}>{t('memoryGarden.noMemories')}</Text>
           <Text style={styles.emptySubtitle}>
-            Start building your memory garden by adding your first photo
+            {t('memoryGarden.noMemoriesSubtitle')}
           </Text>
           <TouchableOpacity 
             style={styles.addFirstButton}
@@ -343,7 +383,7 @@ export default function MemoryGarden() {
             activeOpacity={0.7}
           >
             <Ionicons name="add" size={24} color="white" />
-            <Text style={styles.addFirstButtonText}>Add Your First Memory</Text>
+            <Text style={styles.addFirstButtonText}>{t('memoryGarden.addFirstMemory')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -367,48 +407,43 @@ export default function MemoryGarden() {
         </>
       )}
 
-      {/* Add Memory Modal */}
+      {/* Images Selection Modal */}
       <Modal
-        visible={showAddModal}
+        visible={showImagesModal}
         transparent={true}
         animationType="slide"
-        onRequestClose={closeAddModal}
+        onRequestClose={closeImagesModal}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add Memory</Text>
-            <Text style={styles.modalSubtitle}>
-              Choose how you want to add a new memory
-            </Text>
+          <View style={styles.imagesModalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t('memoryGarden.chooseMethod')}</Text>
+              <Text style={styles.modalSubtitle}>
+                {t('memoryGarden.chooseMethod')}
+              </Text>
+            </View>
             
-            <TouchableOpacity 
-              style={styles.modalButton}
-              onPress={() => {
-                closeAddModal();
-                takePhoto();
-              }}
-            >
-              <Ionicons name="camera" size={24} color="#DD6B20" />
-              <Text style={styles.modalButtonText}>Camera</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.modalButton}
-              onPress={() => {
-                closeAddModal();
-                pickImage();
-              }}
-            >
-              <Ionicons name="images" size={24} color="#DD6B20" />
-              <Text style={styles.modalButtonText}>Photo Library</Text>
-            </TouchableOpacity>
+            {imagesLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#DD6B20" />
+                <Text style={styles.loadingText}>{t('memoryGarden.loading')}</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={availableImages}
+                renderItem={renderImageItem}
+                keyExtractor={(item) => `${item.storyId}-${item.id}`}
+                numColumns={2}
+                contentContainerStyle={styles.imagesList}
+              />
+            )}
             
             <TouchableOpacity 
               style={[styles.modalButton, styles.cancelButton]}
-              onPress={closeAddModal}
+              onPress={closeImagesModal}
             >
               <Ionicons name="close" size={24} color="#718096" />
-              <Text style={[styles.modalButtonText, styles.cancelButtonText]}>Cancel</Text>
+              <Text style={[styles.modalButtonText, styles.cancelButtonText]}>{t('memoryGarden.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -580,5 +615,55 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     color: '#718096',
+  },
+  imagesModalContent: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    width: '100%',
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalHeader: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  imagesList: {
+    padding: 16,
+    paddingBottom: 80,
+  },
+  imageCard: {
+    flex: 1,
+    margin: 8,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    overflow: 'hidden',
+  },
+  imageThumbnail: {
+    width: '100%',
+    height: 100,
+    resizeMode: 'cover',
+  },
+  imageInfo: {
+    padding: 8,
+  },
+  imageDate: {
+    fontSize: 12,
+    color: '#718096',
+    marginBottom: 4,
+  },
+  imageId: {
+    fontSize: 12,
+    color: '#4A5568',
+    fontWeight: '500',
   },
 });
