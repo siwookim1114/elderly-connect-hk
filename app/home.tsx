@@ -91,7 +91,9 @@ export default function HomeDashboard() {
               resizeMode="contain"
             />
           </View>
-          <Text style={styles.brandName}>Mingle</Text>
+          <Text style={styles.brandName}>
+            {currentLanguage === "en" ? t("welcome.title") : t("welcome.chineseTitle")}
+          </Text>
           <Text style={styles.location}>Hong Kong · 香港</Text>
           <Text style={styles.welcomeText}>{t("home.welcome")}</Text>
           <Text style={styles.subtitle}>{t("home.tagline")}</Text>

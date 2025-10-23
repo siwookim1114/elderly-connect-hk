@@ -160,7 +160,9 @@ export default function Index() {
             </View>
             <View style={styles.logoPulse} />
           </View>
-          <Text style={styles.appName}>Mingle</Text>
+          <Text style={styles.appName}>
+            {i18n.language === "en" ? t("welcome.title") : t("welcome.chineseTitle")}
+          </Text>
           <Text style={styles.appSubtitle}>
             {i18n.language === "en" ? "Connect • Share • Enjoy" : "連接 • 分享 • 享受"}
           </Text>

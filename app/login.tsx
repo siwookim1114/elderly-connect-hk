@@ -241,7 +241,7 @@ export default function LoginScreen() {
               style={styles.appName}
               entering={FadeInUp.duration(700).delay(600)}
             >
-              Mingle
+              {i18n.language === "en" ? t("welcome.title") : t("welcome.chineseTitle")}
             </AnimatedText>
             <AnimatedText 
               style={styles.appSubtitle}
