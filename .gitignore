@@ -1,9 +1,0 @@
-.DS_Store
-__pycache__/
-FastAPI APP/uploads/
-FastAPI APP/data/
-FastAPI APP/audio/
-FastAPI APP/__pycache__/
-*.pyc
-image/
-.venv

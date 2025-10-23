@@ -1,0 +1,9 @@
+.DS_Store
+__pycache__/
+memory-garden/uploads/
+memory-garden/data/
+memory-garden/audio/
+memory-garden/__pycache__/
+*.pyc
+image/
+.venv
